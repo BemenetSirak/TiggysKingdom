@@ -1,0 +1,201 @@
+[
+  {
+    "id": "TK-2025-00001",
+    "customerName": "Maria S.",
+    "customerEmail": "maria@example.com",
+    "items": [
+      {
+        "title": "Saint Yared: The Gift of Song",
+        "price": 14.99,
+        "quantity": 1
+      },
+      {
+        "title": "The Holy Liturgy for Little Ones",
+        "price": 11.99,
+        "quantity": 1
+      }
+    ],
+    "total": 26.98,
+    "status": "delivered",
+    "createdAt": "2025-04-10T14:32:00Z"
+  },
+  {
+    "id": "TK-2025-00002",
+    "customerName": "Sara T.",
+    "customerEmail": "sara@example.com",
+    "items": [
+      {
+        "title": "Saint Yared: The Gift of Song",
+        "price": 14.99,
+        "quantity": 2
+      }
+    ],
+    "total": 29.98,
+    "status": "shipped",
+    "createdAt": "2025-04-28T09:15:00Z"
+  },
+  {
+    "id": "TK-2025-00003",
+    "customerName": "John K.",
+    "customerEmail": "john@example.com",
+    "items": [
+      {
+        "title": "Faith Family Gift Bundle",
+        "price": 49.99,
+        "quantity": 1
+      }
+    ],
+    "total": 49.99,
+    "status": "cancelled",
+    "createdAt": "2025-05-01T16:45:00Z"
+  },
+  {
+    "id": "TK-2025-00004",
+    "customerName": "Hana M.",
+    "customerEmail": "hana@example.com",
+    "items": [
+      {
+        "title": "Tiggy's First Fast",
+        "price": 12.99,
+        "quantity": 1
+      },
+      {
+        "title": "Advent Coloring Journey",
+        "price": 8.99,
+        "quantity": 1
+      }
+    ],
+    "total": 21.98,
+    "status": "cancelled",
+    "createdAt": "2025-04-22T11:00:00Z"
+  },
+  {
+    "id": "TK-2025-00005",
+    "customerName": "David P.",
+    "customerEmail": "david@example.com",
+    "items": [
+      {
+        "title": "Saint Nicholas: Keeper of Hope",
+        "price": 14.99,
+        "quantity": 1
+      }
+    ],
+    "total": 14.99,
+    "status": "cancelled",
+    "createdAt": "2025-05-05T08:20:00Z"
+  },
+  {
+    "id": "TK-2026-00006",
+    "stripeSessionId": "cs_test_a1fSgH6ROVxnhNuYVipio37LemasOymZ99EDCUFswtCL5JtsPhWtMEh1Yd",
+    "userId": "1778111989470",
+    "customerName": "Abc",
+    "customerEmail": "admin@abc.com",
+    "items": [
+      {
+        "id": 1,
+        "title": "Saint Yared: The Gift of Song",
+        "author": "By Maria Tesnaye",
+        "price": 14.99,
+        "originalPrice": 19.99,
+        "category": "saint",
+        "badge": "BESTSELLER",
+        "badgeColor": "#7C3AED",
+        "ages": "5-8",
+        "rating": 4.8,
+        "reviews": 186,
+        "quantity": 2
+      }
+    ],
+    "total": 29.98,
+    "status": "cancelled",
+    "createdAt": "2026-05-07T00:15:54.168Z"
+  },
+  {
+    "id": "TK-2026-00007",
+    "stripeSessionId": "cs_test_a1PyrAz68GhTVMKfa7OQY9H0JQS8cFCvcqIIOzZYFFSJmHMIJpdpd6hOaX",
+    "userId": "1778111989470",
+    "customerName": "Abc",
+    "customerEmail": "admin@abc.com",
+    "items": [
+      {
+        "id": 1,
+        "title": "Saint Yared: The Gift of Song",
+        "author": "By Maria Tesnaye",
+        "price": 14.99,
+        "originalPrice": 19.99,
+        "category": "saint",
+        "badge": "BESTSELLER",
+        "badgeColor": "#7C3AED",
+        "ages": "5-8",
+        "rating": 4.8,
+        "reviews": 186,
+        "quantity": 1
+      }
+    ],
+    "total": 14.99,
+    "status": "placed",
+    "createdAt": "2026-05-07T00:21:30.545Z",
+    "cancellationRequested": false,
+    "cancellationRequestedAt": "2026-05-07T00:29:33.237Z",
+    "cancellationDeniedAt": "2026-05-08T21:11:05.427Z"
+  },
+  {
+    "id": "TK-2026-00008",
+    "stripeSessionId": "cs_test_a1ZzwzTUT6IJRYbZvKaC4oNbMFI4j8VnL4e4D05s43RN4jJCCNZIWFTvim",
+    "userId": "1778111989470",
+    "customerName": "Abc",
+    "customerEmail": "admin@abc.com",
+    "items": [
+      {
+        "id": 4,
+        "title": "Saint Nicholas: Keeper of Hope",
+        "author": "Fr. Daniel Yosef",
+        "price": 14.99,
+        "originalPrice": 17.99,
+        "category": "saint",
+        "ages": "5-9",
+        "stock": "1",
+        "sold": 112,
+        "rating": 4.9,
+        "badge": null,
+        "active": true,
+        "createdAt": "2025-01-05T00:00:00Z",
+        "quantity": 1
+      }
+    ],
+    "total": 14.99,
+    "status": "placed",
+    "createdAt": "2026-05-07T00:36:23.792Z",
+    "cancellationRequested": false,
+    "cancellationRequestedAt": "2026-05-09T20:30:23.095Z",
+    "cancellationDeniedAt": "2026-05-09T20:31:08.450Z"
+  },
+  {
+    "id": "TK-2026-00009",
+    "stripeSessionId": "cs_test_a1A45QrX4HHFDLDZARWKQHUgR0qJP0hjh0kyuTJe8OOfEt0nx3aOLpKk3p",
+    "userId": "1778111989470",
+    "customerName": "Abc",
+    "customerEmail": "admin@abc.com",
+    "items": [
+      {
+        "id": 4,
+        "title": "Saint Nicholas: Keeper of Hope",
+        "author": "Fr. Daniel Yosef",
+        "price": 14.99,
+        "originalPrice": 17.99,
+        "category": "saint",
+        "ages": "5-9",
+        "stock": "1",
+        "sold": 112,
+        "rating": 4.9,
+        "badge": null,
+        "active": true,
+        "createdAt": "2025-01-05T00:00:00Z",
+        "quantity": 1
+      }
+    ],
+    "total": 14.99,
+    "status": "cancelled",
+    "createdAt": "2026-05-07T00:36:55.040Z"
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "email": "maria@example.com",
+    "name": "Maria S.",
+    "source": "homepage",
+    "active": false,
+    "createdAt": "2025-01-15T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "email": "sara@example.com",
+    "name": "Sara T.",
+    "source": "subscribe-page",
+    "active": false,
+    "createdAt": "2025-02-03T14:30:00Z"
+  },
+  {
+    "id": 3,
+    "email": "hana@example.com",
+    "name": "Hana M.",
+    "source": "homepage",
+    "active": false,
+    "createdAt": "2025-02-18T09:15:00Z"
+  },
+  {
+    "id": 4,
+    "email": "john@example.com",
+    "name": "John K.",
+    "source": "footer",
+    "active": false,
+    "createdAt": "2025-03-01T16:00:00Z"
+  },
+  {
+    "id": 5,
+    "email": "david@example.com",
+    "name": "David P.",
+    "source": "subscribe-page",
+    "active": false,
+    "createdAt": "2025-04-10T11:45:00Z"
+  },
+  {
+    "id": 6,
+    "email": "test@test.com",
+    "name": "",
+    "source": "homepage",
+    "active": true,
+    "createdAt": "2026-05-08T21:09:47.288Z"
+  },
+  {
+    "id": 7,
+    "email": "abc@123.com",
+    "name": "",
+    "source": "homepage",
+    "active": true,
+    "createdAt": "2026-05-08T21:23:52.026Z"
+  }
+]
