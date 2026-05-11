@@ -6,6 +6,7 @@ import nodemailer from "nodemailer";
 import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { supabase } from "./supabase.js";
 
 // ── Data interfaces ───────────────────────────────────────────────────────────
 interface Product {
@@ -433,12 +434,18 @@ app.get("/api/episodes", (_req: Request, res: Response) => {
 // ADMIN ROUTES (all require JWT)
 // ═════════════════════════════════════════════════════════════════════════════
 
-app.post("/api/admin/login", (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD)
-    return res.status(401).json({ error: "Invalid credentials" });
-  const token = jwt.sign({ username, role: "admin" }, JWT_SECRET, { expiresIn: "8h" });
-  res.json({ token, username });
+app.post("/api/admin/login", async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: "Invalid credentials" });
+
+  // Verify email is in Supabase admins table (falls back to env ADMIN_USERNAME if Supabase not configured)
+  const { data, error } = await supabase.from("admins").select("email").eq("email", email).maybeSingle();
+  const fallbackAllowed = !process.env.SUPABASE_URL && email === ADMIN_USERNAME;
+  if (error || (!data && !fallbackAllowed)) return res.status(401).json({ error: "Not authorised as admin" });
+
+  const token = jwt.sign({ email, role: "admin" }, JWT_SECRET, { expiresIn: "8h" });
+  res.json({ token, email });
 });
 
 app.get("/api/admin/stats", requireAdmin, (_req: Request, res: Response) => {

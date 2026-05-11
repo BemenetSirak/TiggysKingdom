@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const API = 'http://localhost:4242';
 
 export default function AdminLogin() {
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function AdminLogin() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Login failed'); return; }
       localStorage.setItem('tk_admin_token', data.token);
-      localStorage.setItem('tk_admin_user', data.username);
+      localStorage.setItem('tk_admin_user', data.email);
       navigate('/admin');
     } catch {
       setError('Cannot reach server. Make sure the backend is running on port 4242.');
@@ -55,12 +55,12 @@ export default function AdminLogin() {
               </div>
             )}
             <div>
-              <label style={{ display: 'block', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem', fontSize: '0.9rem' }}>Username</label>
+              <label style={{ display: 'block', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem', fontSize: '0.9rem' }}>Email</label>
               <input
-                type="text"
-                value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                placeholder="admin"
+                type="email"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="admin@example.com"
                 style={inputStyle}
                 onFocus={e => e.target.style.borderColor = 'var(--gold)'}
                 onBlur={e => e.target.style.borderColor = 'var(--cream-border)'}
@@ -89,7 +89,7 @@ export default function AdminLogin() {
             </button>
           </form>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, margin: '1rem 0 0' }}>
-            Default: admin / tiggy2025
+            Sign in with your admin email
           </p>
         </div>
       </div>
