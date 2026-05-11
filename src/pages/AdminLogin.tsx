@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 export default function AdminLogin() {
   const [form, setForm] = useState({ email: '', password: '' });

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
-const NEWSLETTER_API = 'http://localhost:4242';
+import { API as NEWSLETTER_API } from '../lib/api';
 
 const NAV_LINKS = [
   { label: 'Episodes', to: '/episodes', icon: '▶' },

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 const STATUS_STEPS = ['placed', 'processing', 'shipped', 'delivered'];
 const STATUS_COLORS: Record<string, string> = {

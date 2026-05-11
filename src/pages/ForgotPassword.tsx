@@ -2,7 +2,7 @@ import { useState, type FormEvent, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 type Step = 'email' | 'code' | 'done';
 

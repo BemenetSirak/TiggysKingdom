@@ -3,126 +3,54 @@ import Stripe from "stripe";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { supabase } from "./supabase.js";
 
-// ── Data interfaces ───────────────────────────────────────────────────────────
-interface Product {
-  id: number;
-  title: string;
-  author?: string;
-  price: number;
-  originalPrice?: number | null;
-  category: string;
-  ages?: string;
-  stock: number;
-  badge?: string | null;
-  active?: boolean;
-  sold?: number;
-  rating?: number;
-  reviews?: number;
-  createdAt?: string;
-}
-
-interface OrderItem {
-  id?: number;
-  title: string;
-  price: number;
-  quantity?: number;
-}
-
-interface Order {
-  id: string;
-  stripeSessionId?: string;
-  userId?: string | null;
-  customerName?: string | null;
-  customerEmail?: string | null;
-  items?: OrderItem[];
-  total: number;
-  status: string;
-  paymentStatus?: string;
-  paidAt?: string;
-  note?: string;
-  cancellationRequested?: boolean;
-  cancellationRequestedAt?: string;
-  cancellationDeniedAt?: string;
-  createdAt?: string;
-}
-
-interface Subscriber {
-  id: number;
-  email: string;
-  name?: string;
-  source?: string;
-  active?: boolean;
-  createdAt?: string;
-}
-
-interface Episode {
-  id: number;
-  videoId: string;
-  title: string;
-  description?: string;
-  ages?: string;
-  category?: string;
-  featured?: boolean;
-  order?: number;
-  active?: boolean;
-  createdAt?: string;
-}
-
-interface AppUser {
-  id: string;
-  name: string;
-  email: string;
-  joinedDate?: string;
-  createdAt?: string;
-}
-
-interface ResetToken {
-  email: string;
-  code: string;
-  expiresAt: number;
-}
-
-interface ActivityLogEntry {
-  id: number;
-  action: string;
-  details: Record<string, unknown>;
-  at: string;
-}
-
-// Extend Express Request to carry the decoded JWT admin payload
-declare global {
-  namespace Express {
-    interface Request {
-      admin?: Record<string, unknown>;
-    }
-  }
-}
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Load .env if present (dotenv optional — falls back to hardcoded defaults)
+// Load .env if present
 try {
   const { config } = await import("dotenv");
   config({ path: join(__dirname, ".env") });
-} catch { /* dotenv not installed, use defaults */ }
+} catch { /* dotenv not installed */ }
 
-// ── Config ───────────────────────────────────────────────────────────────────
-const PORT          = process.env.PORT            || 4242;
+// ── Config ────────────────────────────────────────────────────────────────────
+const PORT          = process.env.PORT             || 4242;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
-const JWT_SECRET    = process.env.JWT_SECRET      || "tiggy-kingdom-admin-secret-2025";
-const ADMIN_USERNAME= process.env.ADMIN_USERNAME  || "admin";
-const ADMIN_PASSWORD= process.env.ADMIN_PASSWORD  || "tiggy2025";
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN   || "http://localhost";
+const JWT_SECRET    = process.env.JWT_SECRET       || "tiggy-kingdom-admin-secret-2025";
+const ADMIN_PASSWORD= process.env.ADMIN_PASSWORD   || "tiggy2025";
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN    || "http://localhost";
 
 const stripe = new Stripe(STRIPE_SECRET);
 const app    = express();
 
-// ── Email transport (optional — only active when SMTP_HOST is set) ────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+// snake_case DB rows → camelCase JS objects
+type Row = Record<string, unknown>;
+const camelize = (row: Row): Row => {
+  const out: Row = {};
+  for (const [k, v] of Object.entries(row))
+    out[k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())] = v;
+  return out;
+};
+const camelRows = (rows: Row[]) => rows.map(camelize);
+
+// Remap episodes: sort_order → order
+const mapEpisode = (row: Row): Row => {
+  const r = camelize(row);
+  r.order = r.sortOrder;
+  delete r.sortOrder;
+  return r;
+};
+
+const appendLog = async (action: string, details: Row = {}) => {
+  try {
+    await supabase.from("activity_log").insert({ action, details, at: new Date().toISOString() });
+  } catch { /* non-critical */ }
+};
+
+// ── Email transport ───────────────────────────────────────────────────────────
 const mailer = process.env.SMTP_HOST
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -139,9 +67,8 @@ const sendMail = async (to: string, subject: string, html: string): Promise<void
       from: `"Tiggy's Kingdom" <${process.env.SMTP_USER || "hello@tiggyskingdom.com"}>`,
       to, subject, html,
     });
-    console.log(`📧 Email sent to ${to}: ${subject}`);
-  } catch (err) {
-    console.warn("Email send failed:", err.message);
+  } catch (err: unknown) {
+    console.warn("Email send failed:", (err as Error).message);
   }
 };
 
@@ -150,17 +77,19 @@ const emailWelcome = (name: string, email: string) => sendMail(email, "Welcome t
     <h1 style="color:#6B2020">Welcome, ${name}! 🐑</h1>
     <p>You've joined <strong>Tiggy's Kingdom</strong> — a place where faith and wonder meet.</p>
     <p>Explore our <a href="${CLIENT_ORIGIN}:5173/episodes" style="color:#C9922A">free episodes</a>, browse the <a href="${CLIENT_ORIGIN}:5173/shop" style="color:#C9922A">shop</a>, and download <a href="${CLIENT_ORIGIN}:5173/activities" style="color:#C9922A">free activities</a>.</p>
-    <p style="color:#888;font-size:12px">© 2025 Tiggy's Kingdom — Unsubscribe anytime.</p>
+    <p style="color:#888;font-size:12px">© 2025 Tiggy's Kingdom</p>
   </div>`
 );
 
-const emailOrderConfirmation = (order: Order) => {
-  if (!order.customerEmail) return;
-  const itemsList = (order.items || []).map(i => `<li>${i.title} × ${i.quantity || 1} — $${(i.price * (i.quantity || 1)).toFixed(2)}</li>`).join("");
-  sendMail(order.customerEmail, `Order Confirmed — ${order.id}`,
+interface OrderRow { id: string; customer_name?: string; customer_email?: string; items?: unknown[]; total: number; }
+const emailOrderConfirmation = (order: OrderRow) => {
+  if (!order.customer_email) return;
+  const items = (order.items || []) as Array<{ title: string; price: number; quantity?: number }>;
+  const itemsList = items.map(i => `<li>${i.title} × ${i.quantity || 1} — $${(i.price * (i.quantity || 1)).toFixed(2)}</li>`).join("");
+  sendMail(order.customer_email, `Order Confirmed — ${order.id}`,
     `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px">
       <h1 style="color:#6B2020">Order Confirmed! 📦</h1>
-      <p>Hi ${order.customerName || "there"}, your order <strong>${order.id}</strong> has been placed.</p>
+      <p>Hi ${order.customer_name || "there"}, your order <strong>${order.id}</strong> has been placed.</p>
       <ul>${itemsList}</ul>
       <p><strong>Total: $${order.total.toFixed(2)}</strong></p>
       <p>Track your order at <a href="${CLIENT_ORIGIN}:5173/orders" style="color:#C9922A">Your Orders</a>.</p>
@@ -170,63 +99,47 @@ const emailOrderConfirmation = (order: Order) => {
 };
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: (origin, cb) => cb(null, true), // restrict to CLIENT_ORIGIN in production
-  credentials: true,
-}));
+app.use(cors({ origin: () => true, credentials: true }));
 
-// Webhook must receive raw body BEFORE express.json() consumes it
+// Stripe webhook — raw body before express.json()
 app.post("/webhook", express.raw({ type: "application/json" }), async (req: Request, res: Response) => {
-  const sig = req.headers["stripe-signature"];
+  const sig = req.headers["stripe-signature"] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  let event: Stripe.Event;
 
-  let event;
   if (webhookSecret) {
-    try {
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err) {
-      console.error("Webhook signature verification failed:", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+    try { event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret); }
+    catch (err: unknown) { return res.status(400).send(`Webhook Error: ${(err as Error).message}`); }
   } else {
-    // Dev fallback — no secret configured, parse manually
-    try { event = JSON.parse(req.body.toString()); } catch { return res.status(400).send("Invalid JSON"); }
+    try { event = JSON.parse(req.body.toString()); }
+    catch { return res.status(400).send("Invalid JSON"); }
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-    const orders = readData<Order>("orders.json");
-    const idx = orders.findIndex(o => o.stripeSessionId === session.id);
-    if (idx !== -1 && orders[idx].paymentStatus !== "paid") {
-      orders[idx].paymentStatus = "paid";
-      orders[idx].paidAt = new Date().toISOString();
-      writeData("orders.json", orders);
-      console.log(`✅  Payment confirmed for order ${orders[idx].id}`);
+    const session = event.data.object as Stripe.Checkout.Session;
+    const { data: order } = await supabase
+      .from("orders")
+      .select("id, payment_status")
+      .eq("stripe_session_id", session.id)
+      .maybeSingle();
+    if (order && order.payment_status !== "paid") {
+      await supabase.from("orders").update({ payment_status: "paid", paid_at: new Date().toISOString() })
+        .eq("stripe_session_id", session.id);
+      console.log(`✅  Payment confirmed for order ${order.id}`);
     }
   }
-
   res.json({ received: true });
 });
 
 app.use(express.json());
 
-// ── Data helpers ──────────────────────────────────────────────────────────────
-const dataPath = (file: string) => join(__dirname, "data", file);
-const readData  = <T = unknown>(file: string): T[] => { try { return JSON.parse(readFileSync(dataPath(file), "utf8")); } catch { return []; } };
-const writeData = (file: string, data: unknown) => writeFileSync(dataPath(file), JSON.stringify(data, null, 2), "utf8");
-const nextId    = (arr: { id: number }[]) => arr.length === 0 ? 1 : Math.max(...arr.map(x => x.id)) + 1;
-
-const appendLog = (action: string, details: Record<string, unknown> = {}) => {
-  try {
-    const log = readData<ActivityLogEntry>("activity-log.json");
-    const id = log.length === 0 ? 1 : Math.max(...log.map(x => x.id)) + 1;
-    log.push({ id, action, details, at: new Date().toISOString() });
-    if (log.length > 500) log.splice(0, log.length - 500);
-    writeData("activity-log.json", log);
-  } catch { /* non-critical */ }
-};
-
 // ── Auth middleware ───────────────────────────────────────────────────────────
+declare global {
+  namespace Express {
+    interface Request { admin?: Record<string, unknown>; }
+  }
+}
+
 const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
@@ -238,14 +151,14 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
 // PUBLIC ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
 
-// ── One-time checkout (cart) ──────────────────────────────────────────────────
+// ── Cart checkout ─────────────────────────────────────────────────────────────
 app.post("/create-checkout-session", async (req: Request, res: Response) => {
   const { items, userId, customerName, customerEmail } = req.body;
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
-      line_items: items.map(item => ({
+      line_items: items.map((item: { title: string; price: number; quantity?: number }) => ({
         price_data: {
           currency: "usd",
           product_data: { name: item.title },
@@ -254,44 +167,41 @@ app.post("/create-checkout-session", async (req: Request, res: Response) => {
         quantity: item.quantity || 1,
       })),
       success_url: `${CLIENT_ORIGIN}:5173/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${CLIENT_ORIGIN}:5173/cart`,
+      cancel_url:  `${CLIENT_ORIGIN}:5173/cart`,
     });
     res.json({ url: session.url });
 
-    const orders = readData<Order>("orders.json");
-    const total  = items.reduce((s: number, i: OrderItem) => s + i.price * (i.quantity || 1), 0);
-    const order  = {
-      id: `TK-${new Date().getFullYear()}-${String(orders.length + 1).padStart(5, "0")}`,
-      stripeSessionId: session.id,
-      userId: userId || null,
-      customerName: customerName || null,
-      customerEmail: customerEmail || null,
-      items,
-      total: Math.round(total * 100) / 100,
-      status: "placed",
-      createdAt: new Date().toISOString(),
-    };
-    orders.push(order);
-    writeData("orders.json", orders);
-    emailOrderConfirmation(order);
+    // Build order record
+    const { count } = await supabase.from("orders").select("*", { count: "exact", head: true });
+    const orderId  = `TK-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(5, "0")}`;
+    const total    = items.reduce((s: number, i: { price: number; quantity?: number }) => s + i.price * (i.quantity || 1), 0);
 
-    // Decrement product stock
-    const products = readData<Product>("products.json");
-    let stockChanged = false;
-    for (const item of items) {
-      const idx = products.findIndex(p => p.id === item.id);
-      if (idx !== -1) {
-        const current = Number(products[idx].stock);
-        if (!isNaN(current)) {
-          products[idx].stock = Math.max(0, current - (item.quantity || 1));
-          stockChanged = true;
-        }
+    const orderRow = {
+      id:                 orderId,
+      stripe_session_id:  session.id,
+      user_id:            userId || null,
+      customer_name:      customerName || null,
+      customer_email:     customerEmail || null,
+      items,
+      total:              Math.round(total * 100) / 100,
+      status:             "placed",
+      created_at:         new Date().toISOString(),
+    };
+    await supabase.from("orders").insert(orderRow);
+    emailOrderConfirmation({ ...orderRow, customer_name: customerName, customer_email: customerEmail, items });
+
+    // Decrement stock
+    for (const item of items as Array<{ id?: number; quantity?: number }>) {
+      if (!item.id) continue;
+      const { data: p } = await supabase.from("products").select("stock").eq("id", item.id).maybeSingle();
+      if (p) {
+        const newStock = Math.max(0, Number(p.stock) - (item.quantity || 1));
+        await supabase.from("products").update({ stock: newStock }).eq("id", item.id);
       }
     }
-    if (stockChanged) writeData("products.json", products);
-  } catch (err) {
+  } catch (err: unknown) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
@@ -315,19 +225,23 @@ app.post("/create-subscription-session", async (req: Request, res: Response) => 
       subscription_data: { trial_period_days: 7 },
       customer_email: customerEmail || undefined,
       success_url: `${CLIENT_ORIGIN}:5173/success?plan=${planId}`,
-      cancel_url: `${CLIENT_ORIGIN}:5173/subscribe`,
+      cancel_url:  `${CLIENT_ORIGIN}:5173/subscribe`,
     });
     res.json({ url: session.url });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
 // ── User orders ───────────────────────────────────────────────────────────────
-app.get("/api/orders/user/:userId", (req: Request, res: Response) => {
-  const orders = readData<Order>("orders.json").filter(o => o.userId === req.params.userId).reverse();
-  res.json(orders);
+app.get("/api/orders/user/:userId", async (req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("user_id", req.params.userId)
+    .order("created_at", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(camelRows(data || []));
 });
 
 // ── Newsletter subscribe ──────────────────────────────────────────────────────
@@ -335,39 +249,39 @@ app.post("/api/subscribe", async (req: Request, res: Response) => {
   const { email, name, source } = req.body;
   if (!email) return res.status(400).json({ error: "Email required" });
 
-  const subs = readData<Subscriber>("subscribers.json");
-  if (subs.find(s => s.email === email)) return res.json({ success: true, message: "Already subscribed!" });
+  const { data: existing } = await supabase.from("subscribers").select("email").eq("email", email).maybeSingle();
+  if (existing) return res.json({ success: true, message: "Already subscribed!" });
 
-  const newSub: Subscriber = { id: nextId(subs), email, name: name || "", source: source || "api", active: true, createdAt: new Date().toISOString() };
-  subs.push(newSub);
-  writeData("subscribers.json", subs);
+  const { error } = await supabase.from("subscribers").insert({ email, name: name || "", source: source || "api", active: true });
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true, message: "Subscribed!" });
 });
 
 // ── Register user ─────────────────────────────────────────────────────────────
-app.post("/api/users/register", (req: Request, res: Response) => {
+app.post("/api/users/register", async (req: Request, res: Response) => {
   const { id, name, email, joinedDate } = req.body;
-  const users = readData<AppUser>("users.json");
-  if (!users.find(u => u.email === email)) {
-    users.push({ id, name, email, joinedDate, createdAt: new Date().toISOString() });
-    writeData("users.json", users);
+  const { data: existing } = await supabase.from("users").select("email").eq("email", email).maybeSingle();
+  if (!existing) {
+    await supabase.from("users").insert({ id, name, email, joined_date: joinedDate, created_at: new Date().toISOString() });
     emailWelcome(name, email);
   }
   res.json({ success: true });
 });
 
 // ── Password reset ────────────────────────────────────────────────────────────
-app.post("/api/auth/request-reset", (req: Request, res: Response) => {
+app.post("/api/auth/request-reset", async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email required" });
 
-  const users = readData<AppUser>("users.json");
-  if (!users.find(u => u.email === email)) return res.status(404).json({ error: "No account found with this email." });
+  const { data: user } = await supabase.from("users").select("email").eq("email", email).maybeSingle();
+  if (!user) return res.status(404).json({ error: "No account found with this email." });
 
-  const tokens = readData<ResetToken>("reset-tokens.json").filter(t => t.expiresAt > Date.now());
-  const code   = String(Math.floor(100000 + Math.random() * 900000));
-  tokens.push({ email, code, expiresAt: Date.now() + 15 * 60 * 1000 }); // 15 min TTL
-  writeData("reset-tokens.json", tokens);
+  // Clean up expired tokens for this email
+  await supabase.from("reset_tokens").delete().eq("email", email).lt("expires_at", Date.now());
+
+  const code      = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = Date.now() + 15 * 60 * 1000;
+  await supabase.from("reset_tokens").insert({ email, code, expires_at: expiresAt });
 
   sendMail(email, "Your Password Reset Code — Tiggy's Kingdom",
     `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
@@ -377,61 +291,64 @@ app.post("/api/auth/request-reset", (req: Request, res: Response) => {
       <p style="color:#888;font-size:12px">If you didn't request this, ignore this email.</p>
     </div>`
   );
-
-  console.log(`🔑 Reset code for ${email}: ${code}`); // dev fallback when email is not configured
+  console.log(`🔑 Reset code for ${email}: ${code}`);
   res.json({ success: true });
 });
 
-app.post("/api/auth/verify-reset", (req: Request, res: Response) => {
+app.post("/api/auth/verify-reset", async (req: Request, res: Response) => {
   const { email, code } = req.body;
   if (!email || !code) return res.status(400).json({ error: "Email and code required" });
 
-  const tokens = readData<ResetToken>("reset-tokens.json");
-  const match  = tokens.find(t => t.email === email && t.code === code && t.expiresAt > Date.now());
-  if (!match) return res.status(400).json({ error: "Invalid or expired code." });
+  const { data: token } = await supabase
+    .from("reset_tokens")
+    .select("id")
+    .eq("email", email)
+    .eq("code", code)
+    .gt("expires_at", Date.now())
+    .maybeSingle();
+  if (!token) return res.status(400).json({ error: "Invalid or expired code." });
 
-  writeData("reset-tokens.json", tokens.filter(t => !(t.email === email && t.code === code)));
+  await supabase.from("reset_tokens").delete().eq("id", token.id);
   res.json({ success: true });
 });
 
-// ── Order cancellation request (user-initiated) ───────────────────────────────
-app.post("/api/orders/:id/cancel-request", (req: Request, res: Response) => {
-  const orders = readData<Order>("orders.json");
-  const idx = orders.findIndex(o => o.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Order not found" });
-  if (!["placed", "processing"].includes(orders[idx].status)) {
+// ── Order cancellation request ────────────────────────────────────────────────
+app.post("/api/orders/:id/cancel-request", async (req: Request, res: Response) => {
+  const { data: order } = await supabase.from("orders").select("status").eq("id", req.params.id).maybeSingle();
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (!["placed", "processing"].includes(order.status))
     return res.status(400).json({ error: "Cancellation can only be requested for placed or processing orders." });
-  }
-  orders[idx].cancellationRequested = true;
-  orders[idx].cancellationRequestedAt = new Date().toISOString();
-  writeData("orders.json", orders);
+  await supabase.from("orders").update({ cancellation_requested: true, cancellation_requested_at: new Date().toISOString() }).eq("id", req.params.id);
   res.json({ success: true });
 });
 
-// ── Cancel denial (admin clears the flag without cancelling) ─────────────────
-app.post("/api/orders/:id/cancel-deny", (req: Request, res: Response) => {
-  const orders = readData<Order>("orders.json");
-  const idx = orders.findIndex(o => o.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Order not found" });
-  orders[idx].cancellationRequested = false;
-  orders[idx].cancellationDeniedAt = new Date().toISOString();
-  writeData("orders.json", orders);
+app.post("/api/orders/:id/cancel-deny", async (req: Request, res: Response) => {
+  const { data: order } = await supabase.from("orders").select("id").eq("id", req.params.id).maybeSingle();
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  await supabase.from("orders").update({ cancellation_requested: false, cancellation_denied_at: new Date().toISOString() }).eq("id", req.params.id);
   res.json({ success: true });
 });
 
 // ── Public products ───────────────────────────────────────────────────────────
-app.get("/api/products", (_req: Request, res: Response) => {
-  res.json(readData<Product>("products.json").filter(p => p.active));
+app.get("/api/products", async (_req: Request, res: Response) => {
+  const { data, error } = await supabase.from("products").select("*").eq("active", true);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(camelRows(data || []));
 });
 
-// ── Public episodes (curated/featured) ───────────────────────────────────────
-app.get("/api/episodes", (_req: Request, res: Response) => {
-  const eps = readData<Episode>("episodes.json").filter(e => e.active).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  res.json(eps);
+// ── Public episodes ───────────────────────────────────────────────────────────
+app.get("/api/episodes", async (_req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from("episodes")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order", { ascending: true });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json((data || []).map(mapEpisode));
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-// ADMIN ROUTES (all require JWT)
+// ADMIN ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
 
 app.post("/api/admin/login", async (req: Request, res: Response) => {
@@ -439,106 +356,143 @@ app.post("/api/admin/login", async (req: Request, res: Response) => {
   if (!email || !password) return res.status(400).json({ error: "Email and password required" });
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: "Invalid credentials" });
 
-  // Verify email is in Supabase admins table (falls back to env ADMIN_USERNAME if Supabase not configured)
-  const { data, error } = await supabase.from("admins").select("email").eq("email", email).maybeSingle();
-  const fallbackAllowed = !process.env.SUPABASE_URL && email === ADMIN_USERNAME;
-  if (error || (!data && !fallbackAllowed)) return res.status(401).json({ error: "Not authorised as admin" });
+  // Check Supabase admins table with a timeout fallback
+  let authorised = false;
+  try {
+    const { data } = await Promise.race([
+      supabase.from("admins").select("email").eq("email", email).maybeSingle(),
+      new Promise<{ data: null }>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+    ]);
+    authorised = !!data;
+  } catch {
+    // Supabase unavailable — fall back to env-based admin list
+    const envAdmins = (process.env.ADMIN_EMAILS || "bemenetzeleke0@gmail.com").split(",").map(e => e.trim());
+    authorised = envAdmins.includes(email);
+  }
+
+  if (!authorised) return res.status(401).json({ error: "Not authorised as admin" });
 
   const token = jwt.sign({ email, role: "admin" }, JWT_SECRET, { expiresIn: "8h" });
   res.json({ token, email });
 });
 
-app.get("/api/admin/stats", requireAdmin, (_req: Request, res: Response) => {
-  const products    = readData<Product>("products.json");
-  const orders      = readData<Order>("orders.json");
-  const subscribers = readData<Subscriber>("subscribers.json");
-  const users       = readData<AppUser>("users.json");
-  const episodes    = readData<Episode>("episodes.json");
-  const revenue     = orders.reduce((s, o) => s + (o.total || 0), 0);
-  const statusCounts = orders.reduce((acc: Record<string, number>, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {});
-  const cancelRequests = orders.filter(o => o.cancellationRequested && o.status !== "cancelled").length;
-  const lowStock = products
-    .filter(p => p.active && Number(p.stock) < 5)
-    .map(p => ({ id: p.id, title: p.title, stock: Number(p.stock) }));
+// ── Stats ─────────────────────────────────────────────────────────────────────
+app.get("/api/admin/stats", requireAdmin, async (_req: Request, res: Response) => {
+  const [
+    { count: totalProducts },
+    { count: activeProducts },
+    { data: orders },
+    { count: totalSubs },
+    { count: activeSubs },
+    { count: totalUsers },
+    { count: totalEpisodes },
+    { count: featuredEpisodes },
+    { data: lowStockData },
+  ] = await Promise.all([
+    supabase.from("products").select("*", { count: "exact", head: true }),
+    supabase.from("products").select("*", { count: "exact", head: true }).eq("active", true),
+    supabase.from("orders").select("id, total, status, cancellation_requested"),
+    supabase.from("subscribers").select("*", { count: "exact", head: true }),
+    supabase.from("subscribers").select("*", { count: "exact", head: true }).eq("active", true),
+    supabase.from("users").select("*", { count: "exact", head: true }),
+    supabase.from("episodes").select("*", { count: "exact", head: true }),
+    supabase.from("episodes").select("*", { count: "exact", head: true }).eq("featured", true).eq("active", true),
+    supabase.from("products").select("id, title, stock").eq("active", true).lt("stock", 5),
+  ]);
+
+  const rows = (orders || []) as Array<{ id: string; total: number; status: string; cancellation_requested?: boolean }>;
+  const revenue = rows.reduce((s, o) => s + (o.total || 0), 0);
+  const statusCounts = rows.reduce((acc: Record<string, number>, o) => {
+    acc[o.status] = (acc[o.status] || 0) + 1; return acc;
+  }, {});
+  const cancelRequests = rows.filter(o => o.cancellation_requested && o.status !== "cancelled").length;
+
   res.json({
-    products:       { total: products.length,    active: products.filter(p => p.active).length },
-    orders:         { total: orders.length,      ...statusCounts },
-    revenue:        Math.round(revenue * 100) / 100,
-    subscribers:    { total: subscribers.length, active: subscribers.filter(s => s.active).length },
-    users:          { total: users.length },
-    episodes:       { total: episodes.length,    featured: episodes.filter(e => e.featured && e.active).length },
+    products:    { total: totalProducts ?? 0, active: activeProducts ?? 0 },
+    orders:      { total: rows.length, ...statusCounts },
+    revenue:     Math.round(revenue * 100) / 100,
+    subscribers: { total: totalSubs ?? 0, active: activeSubs ?? 0 },
+    users:       { total: totalUsers ?? 0 },
+    episodes:    { total: totalEpisodes ?? 0, featured: featuredEpisodes ?? 0 },
     cancelRequests,
-    lowStock,
+    lowStock:    camelRows(lowStockData || []),
   });
 });
 
 // ── Products CRUD ─────────────────────────────────────────────────────────────
-app.get("/api/admin/products", requireAdmin, (_req: Request, res: Response) => res.json(readData<Product>("products.json")));
-
-app.post("/api/admin/products", requireAdmin, (req: Request, res: Response) => {
-  const products = readData<Product>("products.json");
-  const product  = { id: nextId(products), ...req.body, sold: 0, rating: 5.0, active: true, createdAt: new Date().toISOString() };
-  products.push(product);
-  writeData("products.json", products);
-  appendLog("product_create", { id: product.id, title: product.title });
-  res.status(201).json(product);
+app.get("/api/admin/products", requireAdmin, async (_req: Request, res: Response) => {
+  const { data, error } = await supabase.from("products").select("*").order("id");
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(camelRows(data || []));
 });
 
-app.put("/api/admin/products/:id", requireAdmin, (req: Request, res: Response) => {
-  const products = readData<Product>("products.json");
-  const idx = products.findIndex(p => p.id === Number(req.params.id));
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  products[idx] = { ...products[idx], ...req.body, id: products[idx].id };
-  writeData("products.json", products);
-  appendLog("product_update", { id: products[idx].id, title: products[idx].title });
-  res.json(products[idx]);
+app.post("/api/admin/products", requireAdmin, async (req: Request, res: Response) => {
+  const b = req.body;
+  const { data, error } = await supabase.from("products").insert({
+    title: b.title, author: b.author, price: b.price, original_price: b.originalPrice ?? null,
+    category: b.category, ages: b.ages, stock: b.stock ?? 0, badge: b.badge ?? null, active: b.active ?? true,
+  }).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  await appendLog("product_create", { id: data.id, title: data.title });
+  res.status(201).json(camelize(data));
 });
 
-app.delete("/api/admin/products/:id", requireAdmin, (req: Request, res: Response) => {
-  const products = readData<Product>("products.json");
-  const idx = products.findIndex(p => p.id === Number(req.params.id));
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  products[idx].active = false;
-  writeData("products.json", products);
-  appendLog("product_delete", { id: products[idx].id, title: products[idx].title });
+app.put("/api/admin/products/:id", requireAdmin, async (req: Request, res: Response) => {
+  const b = req.body;
+  const { data, error } = await supabase.from("products").update({
+    title: b.title, author: b.author, price: b.price, original_price: b.originalPrice ?? null,
+    category: b.category, ages: b.ages, stock: b.stock, badge: b.badge ?? null, active: b.active,
+  }).eq("id", Number(req.params.id)).select().single();
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
+  await appendLog("product_update", { id: data.id, title: data.title });
+  res.json(camelize(data));
+});
+
+app.delete("/api/admin/products/:id", requireAdmin, async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from("products").update({ active: false })
+    .eq("id", Number(req.params.id)).select("id, title").single();
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
+  await appendLog("product_delete", { id: data.id, title: data.title });
   res.json({ success: true });
 });
 
 // ── Orders ────────────────────────────────────────────────────────────────────
-app.get("/api/admin/orders", requireAdmin, (_req: Request, res: Response) => res.json(readData<Order>("orders.json").reverse()));
-
-app.put("/api/admin/orders/:id/status", requireAdmin, (req: Request, res: Response) => {
-  const orders = readData<Order>("orders.json");
-  const idx = orders.findIndex(o => o.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  const prev = orders[idx].status;
-  orders[idx].status = req.body.status;
-  if (req.body.status === "cancelled") orders[idx].cancellationRequested = false;
-  writeData("orders.json", orders);
-  appendLog("order_status", { orderId: req.params.id, from: prev, to: req.body.status });
-  res.json(orders[idx]);
+app.get("/api/admin/orders", requireAdmin, async (_req: Request, res: Response) => {
+  const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(camelRows(data || []));
 });
 
-app.put("/api/admin/orders/:id/note", requireAdmin, (req: Request, res: Response) => {
-  const orders = readData<Order>("orders.json");
-  const idx = orders.findIndex(o => o.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  orders[idx].note = req.body.note || "";
-  writeData("orders.json", orders);
-  appendLog("order_note", { orderId: req.params.id, note: req.body.note });
-  res.json(orders[idx]);
+app.put("/api/admin/orders/:id/status", requireAdmin, async (req: Request, res: Response) => {
+  const { data: prev } = await supabase.from("orders").select("status").eq("id", req.params.id).maybeSingle();
+  const update: Row = { status: req.body.status };
+  if (req.body.status === "cancelled") update.cancellation_requested = false;
+  const { data, error } = await supabase.from("orders").update(update).eq("id", req.params.id).select().single();
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
+  await appendLog("order_status", { orderId: req.params.id, from: prev?.status, to: req.body.status });
+  res.json(camelize(data));
+});
+
+app.put("/api/admin/orders/:id/note", requireAdmin, async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from("orders").update({ note: req.body.note || "" })
+    .eq("id", req.params.id).select().single();
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
+  await appendLog("order_note", { orderId: req.params.id, note: req.body.note });
+  res.json(camelize(data));
 });
 
 // ── Subscribers ───────────────────────────────────────────────────────────────
-app.get("/api/admin/subscribers", requireAdmin, (_req: Request, res: Response) => res.json(readData<Subscriber>("subscribers.json").reverse()));
+app.get("/api/admin/subscribers", requireAdmin, async (_req: Request, res: Response) => {
+  const { data, error } = await supabase.from("subscribers").select("*").order("created_at", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(camelRows(data || []));
+});
 
-app.delete("/api/admin/subscribers/:id", requireAdmin, (req: Request, res: Response) => {
-  const subs = readData<Subscriber>("subscribers.json");
-  const idx = subs.findIndex(s => s.id === Number(req.params.id));
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  subs[idx].active = false;
-  writeData("subscribers.json", subs);
-  appendLog("subscriber_remove", { email: subs[idx].email });
+app.delete("/api/admin/subscribers/:id", requireAdmin, async (req: Request, res: Response) => {
+  const { data, error } = await supabase.from("subscribers").update({ active: false })
+    .eq("id", Number(req.params.id)).select("email").single();
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
+  await appendLog("subscriber_remove", { email: data.email });
   res.json({ success: true });
 });
 
@@ -546,49 +500,67 @@ app.post("/api/admin/email-blast", requireAdmin, async (req: Request, res: Respo
   const { subject, html } = req.body;
   if (!subject || !html) return res.status(400).json({ error: "subject and html required" });
   if (!mailer) return res.status(503).json({ error: "Email not configured — add SMTP settings to server/.env" });
-  const subs = readData<Subscriber>("subscribers.json").filter(s => s.active);
+  const { data: subs } = await supabase.from("subscribers").select("email").eq("active", true);
   let sent = 0, failed = 0;
-  for (const sub of subs) {
+  for (const sub of subs || []) {
     try { await sendMail(sub.email, subject, html); sent++; }
     catch { failed++; }
   }
-  appendLog("email_blast", { subject, sent, failed, total: subs.length });
+  await appendLog("email_blast", { subject, sent, failed, total: (subs || []).length });
   res.json({ success: true, sent, failed });
 });
 
-app.get("/api/admin/activity-log", requireAdmin, (_req: Request, res: Response) => {
-  res.json(readData<ActivityLogEntry>("activity-log.json").reverse().slice(0, 200));
+// ── Activity log ──────────────────────────────────────────────────────────────
+app.get("/api/admin/activity-log", requireAdmin, async (_req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .order("at", { ascending: false })
+    .limit(200);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
 });
 
 // ── Users ─────────────────────────────────────────────────────────────────────
-app.get("/api/admin/users", requireAdmin, (_req: Request, res: Response) => res.json(readData<AppUser>("users.json").reverse()));
+app.get("/api/admin/users", requireAdmin, async (_req: Request, res: Response) => {
+  const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(camelRows(data || []));
+});
 
 // ── Episodes CRUD ─────────────────────────────────────────────────────────────
-app.get("/api/admin/episodes", requireAdmin, (_req: Request, res: Response) => res.json(readData<Episode>("episodes.json")));
-
-app.post("/api/admin/episodes", requireAdmin, (req: Request, res: Response) => {
-  const eps = readData<Episode>("episodes.json");
-  const ep  = { id: nextId(eps), ...req.body, active: true, createdAt: new Date().toISOString() };
-  eps.push(ep);
-  writeData("episodes.json", eps);
-  res.status(201).json(ep);
+app.get("/api/admin/episodes", requireAdmin, async (_req: Request, res: Response) => {
+  const { data, error } = await supabase.from("episodes").select("*").order("sort_order");
+  if (error) return res.status(500).json({ error: error.message });
+  res.json((data || []).map(mapEpisode));
 });
 
-app.put("/api/admin/episodes/:id", requireAdmin, (req: Request, res: Response) => {
-  const eps = readData<Episode>("episodes.json");
-  const idx = eps.findIndex(e => e.id === Number(req.params.id));
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  eps[idx] = { ...eps[idx], ...req.body, id: eps[idx].id };
-  writeData("episodes.json", eps);
-  res.json(eps[idx]);
+app.post("/api/admin/episodes", requireAdmin, async (req: Request, res: Response) => {
+  const b = req.body;
+  const { data, error } = await supabase.from("episodes").insert({
+    video_id: b.videoId, title: b.title, description: b.description,
+    ages: b.ages, category: b.category, featured: b.featured ?? false,
+    sort_order: b.order ?? 1, active: true,
+  }).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(mapEpisode(data));
 });
 
-app.delete("/api/admin/episodes/:id", requireAdmin, (req: Request, res: Response) => {
-  const eps = readData<Episode>("episodes.json");
-  const idx = eps.findIndex(e => e.id === Number(req.params.id));
-  if (idx === -1) return res.status(404).json({ error: "Not found" });
-  eps[idx].active = false;
-  writeData("episodes.json", eps);
+app.put("/api/admin/episodes/:id", requireAdmin, async (req: Request, res: Response) => {
+  const b = req.body;
+  const { data, error } = await supabase.from("episodes").update({
+    video_id: b.videoId, title: b.title, description: b.description,
+    ages: b.ages, category: b.category, featured: b.featured,
+    sort_order: b.order, active: b.active,
+  }).eq("id", Number(req.params.id)).select().single();
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
+  res.json(mapEpisode(data));
+});
+
+app.delete("/api/admin/episodes/:id", requireAdmin, async (req: Request, res: Response) => {
+  const { error } = await supabase.from("episodes").update({ active: false })
+    .eq("id", Number(req.params.id));
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
   res.json({ success: true });
 });
 
@@ -598,7 +570,7 @@ app.get("/health", (_req: Request, res: Response) => res.json({ status: "ok", ti
 // ── Startup ───────────────────────────────────────────────────────────────────
 const server = app.listen(PORT, () => console.log(`✅  Tiggy's Kingdom API  →  http://localhost:${PORT}`));
 
-process.on("uncaughtException",  (err)    => { console.error("Uncaught Exception:",  err);    process.exit(1); });
+process.on("uncaughtException",  (err)    => { console.error("Uncaught Exception:",  err); process.exit(1); });
 process.on("unhandledRejection", (reason) => { console.error("Unhandled Rejection:", reason); process.exit(1); });
 server.on("error", (err: NodeJS.ErrnoException) => {
   console.error(err.code === "EADDRINUSE" ? `Port ${PORT} is already in use.` : err);

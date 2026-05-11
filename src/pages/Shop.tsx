@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth, type OrderActivity } from '../context/AuthContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 interface Product {
   id: number;
@@ -229,7 +229,7 @@ export default function Shop() {
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [productsLoading, setProductsLoading] = useState(true);
 
-  const { addToCart, cartCount, cartTotal } = useCart();
+  const { addToCart, cartCount } = useCart();
   const { addToast } = useToast();
   const { user, saveActivity } = useAuth();
 
@@ -255,7 +255,7 @@ export default function Shop() {
   const handleStripeCheckout = async (product: Product) => {
     const items = [product];
     try {
-      const response = await fetch('http://localhost:4242/create-checkout-session', {
+      const response = await fetch(`${API}/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -377,26 +377,7 @@ export default function Shop() {
           </div>
         )}
 
-        {/* Spacer so sticky bar doesn't cover last row on mobile */}
-        {cartCount > 0 && <div style={{ height: 72 }} className="mobile-only-block" />}
       </div>
-
-      {/* Sticky mobile cart bar */}
-      {cartCount > 0 && (
-        <div className="mobile-cart-bar">
-          <div>
-            <p style={{ margin: 0, fontWeight: 800, fontSize: '0.9rem', color: 'white' }}>
-              🛒 {cartCount} item{cartCount !== 1 ? 's' : ''} in cart
-            </p>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>
-              ${cartTotal.toFixed(2)} total
-            </p>
-          </div>
-          <Link to="/cart" className="btn-gold" style={{ padding: '0.55rem 1.25rem', fontSize: '0.9rem', flexShrink: 0 }}>
-            View Cart →
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

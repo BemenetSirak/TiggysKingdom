@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 const STORY_CATEGORIES = ['story', 'saint', 'prayer'];
 const BADGE_COLORS: Record<string, string> = { BESTSELLER: '#7C3AED', NEW: '#22C55E', POPULAR: '#F97316' };
 const AGE_FILTERS: { label: string; value: string | null }[] = [

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 interface Order {
   id: string;

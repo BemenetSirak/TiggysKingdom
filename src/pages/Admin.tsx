@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode, type CSSProperties, type FormEvent, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 interface AdminProduct {
   id: number;

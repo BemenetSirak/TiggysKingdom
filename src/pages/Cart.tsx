@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth, type OrderActivity } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 interface RecommendedProduct {
   id: number;

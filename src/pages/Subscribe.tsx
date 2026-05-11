@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 const PLAN_PRICES: Record<string, number> = { kingdom: 4.89, royal: 9.89 };
 

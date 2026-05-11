@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import type { VideoProgress } from '../context/AuthContext';
 
-const API = 'http://localhost:4242';
+import { API } from '../lib/api';
 
 const ADVENTURE_CARDS = [
   { title: 'Animated Adventures', desc: 'Watch Tiggy explore ancient churches, learn about saints, and discover the beauty of Orthodox faith.', cta: 'Watch Now →', to: '/episodes', bg: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)', icon: '▶', iconBg: '#F97316' },
