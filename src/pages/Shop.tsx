@@ -6,6 +6,7 @@ import { useAuth, type OrderActivity } from '../context/AuthContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 
 import { API } from '../lib/api';
+import { COVER_COLORS, COVER_DARKS } from '../lib/constants';
 
 interface Product {
   id: number;
@@ -69,8 +70,6 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-const COVER_COLORS = ['#7B2020','#1D4ED8','#EA580C','#6D28D9','#065F46','#B45309','#9D174D','#0F766E'];
-const COVER_DARKS  = ['#4A1515','#1E3A8A','#C2410C','#5B21B6','#064E3B','#92400E','#701A4A','#0D5C55'];
 const CATEGORY_ICONS: Record<string, string> = { saint: '✝', story: '✦', prayer: '🙏', coloring: '🎨', gift: '🎁' };
 
 function BookCover({ product }: { product: Product }) {
@@ -298,7 +297,12 @@ export default function Shop() {
     <div>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, var(--gold-pale), #FDE68A)', padding: '3rem 1.25rem', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'var(--gold-dark)', margin: '0 0 0.25rem' }}>📖 Our Collection</p>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+          </span>
+        </div>
         <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
           Treasured Tales for Your Family
         </h1>

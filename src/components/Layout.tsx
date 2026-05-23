@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
 import { API as NEWSLETTER_API } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 const NAV_LINKS = [
   { label: 'Episodes', to: '/episodes', icon: '▶' },
@@ -19,7 +20,8 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   '/episodes': 'Episodes', '/lessons': 'Episodes', '/shop': 'Shop', '/cart': 'Cart',
   '/orders': 'My Orders', '/success': 'Order Confirmed', '/dashboard': 'Dashboard',
   '/activities': 'Activities', '/subscribe': 'Subscribe', '/about': 'About',
-  '/stories': 'Stories', '/calendar': 'Calendar',
+  '/stories': 'Stories', '/calendar': 'Calendar', '/terms': 'Terms of Service',
+  '/privacy': 'Privacy Policy',
 };
 
 const FOOTER_COLS = [
@@ -56,7 +58,8 @@ const FOOTER_COLS = [
       { label: 'My Orders',  to: '/orders' },
       { label: 'Dashboard',  to: '/dashboard' },
       { label: 'Sign In',    to: '/login' },
-      { label: 'About',      to: '/about' },
+      { label: 'Privacy',    to: '/privacy' },
+      { label: 'Terms',      to: '/terms' },
     ],
   },
 ];
@@ -71,6 +74,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [footerEmail, setFooterEmail] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
 
+  const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
   const { addToast } = useToast();
@@ -171,7 +175,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </Link>
 
           {/* Desktop nav */}
-          <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          <div className="desktop-nav" style={{ alignItems: 'center', gap: '0.25rem' }}>
             {NAV_LINKS.map(l => (
               <Link
                 key={l.to}
@@ -192,7 +196,17 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           {/* Desktop right */}
-          <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="desktop-nav" style={{ alignItems: 'center', gap: '0.5rem' }}>
+
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              style={{ background: 'none', border: 'none', fontSize: '1.15rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '0.5rem', color: 'var(--text-secondary)', lineHeight: 1 }}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
 
             {/* Search */}
             {searchOpen ? (
@@ -240,7 +254,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{userMenuOpen ? '▲' : '▼'}</span>
                 </button>
                 {userMenuOpen && (
-                  <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: 'white', borderRadius: '0.875rem', boxShadow: '0 8px 32px rgba(107,32,32,0.15)', border: '1px solid var(--cream-border)', minWidth: 180, overflow: 'hidden', zIndex: 100 }}>
+                  <div className="user-dropdown" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: 'white', borderRadius: '0.875rem', boxShadow: '0 8px 32px rgba(107,32,32,0.15)', border: '1px solid var(--cream-border)', minWidth: 180, overflow: 'hidden', zIndex: 100 }}>
                     {[
                       { to: '/dashboard', icon: '🏠', label: 'Dashboard' },
                       { to: '/orders', icon: '📦', label: 'My Orders' },
@@ -276,7 +290,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           {/* Mobile right */}
-          <div className="mobile-nav-btn" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="mobile-nav-btn" style={{ alignItems: 'center', gap: '0.75rem' }}>
             <Link to="/cart" style={{ position: 'relative', color: 'var(--maroon)', fontSize: '1.3rem' }}>
               🛒
               {cartCount > 0 && (
@@ -304,12 +318,21 @@ export default function Layout({ children }: { children: ReactNode }) {
               <img src="/tiggy.png" alt="Tiggy" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
               <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: 'var(--maroon)' }}>Tiggy's Kingdom</span>
             </Link>
-            <button
-              onClick={() => setMobileOpen(false)}
-              style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--maroon)', color: 'white', border: 'none', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              ✕
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '0.5rem', color: 'var(--text-secondary)', lineHeight: 1 }}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+              <button
+                onClick={() => setMobileOpen(false)}
+                style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--maroon)', color: 'white', border: 'none', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -401,11 +424,16 @@ export default function Layout({ children }: { children: ReactNode }) {
 
           {/* Top - logo */}
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 0.75rem', border: '3px solid var(--maroon)', boxShadow: '0 4px 16px rgba(107,32,32,0.2)' }}>
-              <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'var(--maroon)', margin: 0, fontSize: '1.5rem' }}>Tiggy's Kingdom</h3>
-            <p style={{ color: 'var(--gold)', fontWeight: 700, margin: '0.25rem 0 0', fontSize: '0.95rem' }}>Where Faith &amp; Wonder Meet ✦</p>
+            <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--maroon)', boxShadow: '0 4px 16px rgba(107,32,32,0.2)', flexShrink: 0 }}>
+                <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.5rem', color: 'var(--maroon)', lineHeight: 1.1 }}>
+                Tiggy's<br />
+                <span style={{ fontSize: '0.95rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.1em' }}>KINGDOM</span>
+              </span>
+            </Link>
+            <p style={{ color: 'var(--text-muted)', fontWeight: 700, margin: '0.75rem 0 0', fontSize: '0.9rem' }}>Where Faith &amp; Wonder Meet ✦</p>
           </div>
 
           {/* Link columns */}
@@ -448,7 +476,9 @@ export default function Layout({ children }: { children: ReactNode }) {
           {/* Bottom bar */}
           <div style={{ borderTop: '1px solid var(--cream-border)', padding: '1.25rem 0', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-              © 2025 Tiggy's Kingdom · <a href="#" style={{ color: 'var(--text-muted)' }}>Privacy</a> · <a href="#" style={{ color: 'var(--text-muted)' }}>Terms</a> · <a href="#" style={{ color: 'var(--text-muted)' }}>Cookies</a>
+              © {new Date().getFullYear()} Tiggy's Kingdom ·{' '}
+              <Link to="/privacy" style={{ color: 'var(--text-muted)' }}>Privacy</Link> ·{' '}
+              <Link to="/terms" style={{ color: 'var(--text-muted)' }}>Terms</Link>
             </p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               {['✓ Theologically Reviewed', '✓ Ad-Free Always', '✓ Orthodox Values'].map(b => (

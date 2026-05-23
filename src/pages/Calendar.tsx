@@ -189,16 +189,21 @@ export default function Calendar() {
   return (
     <div style={{ minHeight: '70vh', background: 'var(--cream)' }}>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #6D28D9 0%, #4C1D95 60%, #2D1666 100%)', padding: '3rem 1.25rem', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.8)', margin: '0 0 0.25rem', fontSize: '1rem' }}>✦ Liturgical Year</p>
-        <h1 style={{ color: 'white', margin: '0 0 0.75rem', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)' }}>Sacred Calendar</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, margin: '0 auto 1.25rem', maxWidth: 580, lineHeight: 1.6 }}>
-          Feast days, fasting seasons, and celebrations of the <strong style={{ color: '#FDE68A' }}>Oriental Orthodox</strong> liturgical year —
+      <div style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '3rem 1.25rem', textAlign: 'center', borderBottom: '2px solid var(--cream-border)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+          </span>
+        </div>
+        <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.75rem', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)' }}>Sacred Calendar</h1>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: '0 auto 1.25rem', maxWidth: 580, lineHeight: 1.6 }}>
+          Feast days, fasting seasons, and celebrations of the <strong style={{ color: 'var(--maroon)' }}>Oriental Orthodox</strong> liturgical year —
           following Ethiopian Tewahedo &amp; Coptic Orthodox traditions.
         </p>
-        <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.12)', borderRadius: '0.75rem', padding: '0.35rem', gap: '0.25rem' }}>
+        <div style={{ display: 'inline-flex', background: 'var(--cream-border)', borderRadius: '0.75rem', padding: '0.35rem', gap: '0.25rem' }}>
           {[['all','All Traditions'],['ethiopian','Ethiopian'],['coptic','Coptic']].map(([val, lbl]) => (
-            <button key={val} onClick={() => setFilter(val)} style={{ padding: '0.35rem 0.875rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', background: filter === val ? 'white' : 'transparent', color: filter === val ? '#4C1D95' : 'rgba(255,255,255,0.85)', transition: 'all 0.15s' }}>
+            <button key={val} onClick={() => setFilter(val)} style={{ padding: '0.35rem 0.875rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', background: filter === val ? 'var(--maroon)' : 'transparent', color: filter === val ? 'white' : 'var(--text-secondary)', transition: 'all 0.15s' }}>
               {lbl}
             </button>
           ))}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, type ReactNode, type CSSPrope
 import { useNavigate } from 'react-router-dom';
 
 import { API } from '../lib/api';
+import { STATUS_COLORS } from '../lib/constants';
 
 interface AdminProduct {
   id: number;
@@ -167,7 +168,6 @@ const TD = ({ children, style }: { children: ReactNode; style?: CSSProperties })
   </td>
 );
 
-const STATUS_COLORS: Record<string, string> = { placed: '#3B82F6', processing: '#F97316', shipped: '#7C3AED', delivered: '#22C55E', cancelled: '#EF4444' };
 
 function StatusBadge({ status }: { status: string }) {
   const color = STATUS_COLORS[status] || '#9B7070';
@@ -177,6 +177,7 @@ function StatusBadge({ status }: { status: string }) {
 // ── printOrder ─────────────────────────────────────────────────────────────────
 function printOrder(o: AdminOrder) {
   const w = window.open('', '_blank', 'width=620,height=720');
+  if (!w) { alert('Please allow pop-ups to print receipts.'); return; }
   w.document.write(`<!DOCTYPE html><html><head><title>Receipt ${o.id}</title><style>
     body{font-family:sans-serif;padding:32px;max-width:480px;margin:auto;color:#222}
     h2{color:#6B2020;margin-bottom:4px}
@@ -1175,11 +1176,16 @@ export default function Admin() {
                 })()}
               </div>
 
-              <div style={{ background: 'var(--cream-dark)', borderRadius: '1rem', padding: '1.5rem' }}>
-                <p style={{ fontWeight: 700, color: 'var(--maroon)', margin: '0 0 0.5rem' }}>Admin Credentials (dev only)</p>
-                <p style={{ margin: 0, fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Username: <strong>admin</strong> &nbsp;|&nbsp; Password: <strong>tiggy2025</strong></p>
-                <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Move credentials to .env before deploying.</p>
-                <p style={{ margin: '0.5rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Keyboard shortcuts: <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>O</span> Overview · <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>P</span> Products · <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>R</span> Orders · <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>S</span> Subscribers · <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>U</span> Users · <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>E</span> Episodes · <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>L</span> Activity</p>
+              <div style={{ background: 'var(--cream-dark)', borderRadius: '1rem', padding: '1.25rem 1.5rem' }}>
+                <p style={{ fontWeight: 700, color: 'var(--maroon)', margin: '0 0 0.35rem', fontSize: '0.9rem' }}>Keyboard Shortcuts</p>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  {['O Overview', 'P Products', 'R Orders', 'S Subscribers', 'U Users', 'E Episodes', 'L Activity'].map(s => (
+                    <span key={s} style={{ marginRight: '0.75rem', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: 'monospace', background: 'var(--cream)', padding: '0 4px', borderRadius: 3 }}>{s[0]}</span>
+                      {' '}{s.slice(2)}
+                    </span>
+                  ))}
+                </p>
               </div>
             </div>
           )}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import type { VideoProgress } from '../context/AuthContext';
+import EmptyState from '../components/EmptyState';
 
 import { API } from '../lib/api';
 
@@ -219,6 +220,7 @@ export default function Home() {
                       <img
                         src={`https://i.ytimg.com/vi/${ep.videoId}/mqdefault.jpg`}
                         alt={ep.title}
+                        loading="lazy"
                         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
@@ -246,8 +248,11 @@ export default function Home() {
                 </div>
               );
             }) : (
-              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                No episodes for this age range yet.
+              <div style={{ gridColumn: '1/-1' }}>
+                <EmptyState
+                  message="No episodes for this age range yet — check back soon!"
+                  action={{ label: 'View All Episodes', to: '/episodes' }}
+                />
               </div>
             )}
           </div>

@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Lessons from './pages/Lessons';
 import Shop from './pages/Shop';
@@ -20,13 +22,17 @@ import Admin from './pages/Admin';
 import AdminLogin from './pages/AdminLogin';
 import Stories from './pages/Stories';
 import Calendar from './pages/Calendar';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <CartProvider>
         <ToastProvider>
           <Router>
+            <ScrollToTop />
             <Routes>
               {/* Admin routes — no main Layout wrapper */}
               <Route path="/admin/login" element={<AdminLogin />} />
@@ -51,6 +57,8 @@ function App() {
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/stories" element={<Stories />} />
                     <Route path="/calendar" element={<Calendar />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/privacy" element={<Privacy />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>
@@ -60,6 +68,7 @@ function App() {
         </ToastProvider>
       </CartProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

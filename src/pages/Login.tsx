@@ -1,4 +1,4 @@
-import React, { useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -92,7 +92,12 @@ export default function Login() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <Link to="/" style={{ fontSize: '3.5rem', display: 'block', marginBottom: '0.5rem' }}>🐑</Link>
+          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', textDecoration: 'none' }}>
+            <img src="/tiggy.png" alt="Tiggy" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.25rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+              Tiggy's<br /><span style={{ fontSize: '0.82rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+            </span>
+          </Link>
           <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.25rem', fontSize: '1.875rem' }}>
             {mode === 'login' ? 'Welcome Back!' : "Join Tiggy's Kingdom"}
           </h1>
@@ -214,24 +219,6 @@ export default function Login() {
               {loading ? '...' : mode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
 
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--cream-border)' }} />
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>or</span>
-              <div style={{ flex: 1, height: 1, background: 'var(--cream-border)' }} />
-            </div>
-
-            {/* Google button (UI only — connect Google OAuth when ready) */}
-            <button
-              type="button"
-              style={{ width: '100%', padding: '0.875rem', borderRadius: '9999px', border: '2px solid var(--cream-border)', background: 'white', color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', cursor: 'pointer', transition: 'border-color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--gold)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--cream-border)'}
-            >
-              <span style={{ fontSize: '1.25rem' }}>G</span>
-              Continue with Google
-            </button>
-
             {mode === 'login' && (
               <p style={{ textAlign: 'center', margin: 0 }}>
                 <Link to="/forgot-password" style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.875rem' }}>Forgot your password?</Link>
@@ -243,8 +230,8 @@ export default function Login() {
         {mode === 'register' && (
           <p style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>
             By creating an account you agree to our{' '}
-            <a href="#" style={{ color: 'var(--gold)' }}>Terms of Service</a> and{' '}
-            <a href="#" style={{ color: 'var(--gold)' }}>Privacy Policy</a>.
+            <Link to="/terms" style={{ color: 'var(--gold)' }}>Terms of Service</Link> and{' '}
+            <Link to="/privacy" style={{ color: 'var(--gold)' }}>Privacy Policy</Link>.
           </p>
         )}
       </div>

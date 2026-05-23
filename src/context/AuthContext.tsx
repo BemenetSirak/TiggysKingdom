@@ -43,6 +43,7 @@ interface AuthContextValue {
   register: (name: string, email: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
   loginAsGuest: () => void;
+  updateUser: (updates: Partial<User>) => void;
   saveActivity: (userId: string, activity: Omit<Activity, 'savedAt'>) => void;
   getLastActivity: (userId: string) => Activity | null;
   saveVideoProgress: (userId: string, progress: Omit<VideoProgress, 'lastWatchedAt'>) => void;
@@ -114,6 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('tk_user');
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    if (!user) return;
+    const updated = { ...user, ...updates };
+    setUser(updated);
+    localStorage.setItem('tk_user', JSON.stringify(updated));
+    const users: (User & { password: string })[] = JSON.parse(localStorage.getItem('tk_users') || '[]');
+    const idx = users.findIndex(u => u.id === updated.id);
+    if (idx !== -1) { users[idx] = { ...users[idx], ...updates }; localStorage.setItem('tk_users', JSON.stringify(users)); }
+  };
+
   const saveActivity = (userId: string, activity: Omit<Activity, 'savedAt'>) => {
     if (!userId || userId === 'guest') return;
     localStorage.setItem(`tk_activity_${userId}`, JSON.stringify({ ...activity, savedAt: new Date().toISOString() }));
@@ -151,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, loginAsGuest, saveActivity, getLastActivity, saveVideoProgress, getVideoProgress, getWatchHistory }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, loginAsGuest, updateUser, saveActivity, getLastActivity, saveVideoProgress, getVideoProgress, getWatchHistory }}>
       {children}
     </AuthContext.Provider>
   );

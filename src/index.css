@@ -26,6 +26,41 @@
   --text-muted: #9B7070;
 }
 
+/* ======================================================
+   DARK MODE — all CSS-variable surfaces flip here.
+   Inline `background: white` overrides are handled via
+   the targeted selectors below.
+   ====================================================== */
+[data-theme="dark"] {
+  --cream:        #1A1210;
+  --cream-dark:   #231817;
+  --cream-border: #3D2828;
+  --gold-pale:    #2C1E08;
+  --maroon:       #E07070;
+  --maroon-dark:  #C45555;
+  --maroon-light: #F08080;
+  --gold:         #E0A840;
+  --gold-dark:    #C9922A;
+  --text-primary:   #F0E8E6;
+  --text-secondary: #D4AAAA;
+  --text-muted:     #8A6060;
+  color-scheme: dark;
+}
+
+/* Surface overrides for elements that hardcode `background: white` */
+[data-theme="dark"] .card                   { background: #2D1C1C !important; }
+[data-theme="dark"] .tk-input               { background: #2D1C1C !important; color: var(--text-primary); border-color: var(--cream-border); }
+[data-theme="dark"] .tk-input::placeholder  { color: var(--text-muted); }
+[data-theme="dark"] select                  { background: #2D1C1C !important; color: var(--text-primary); border-color: var(--cream-border) !important; }
+[data-theme="dark"] .mobile-menu-overlay    { background: var(--cream); }
+[data-theme="dark"] .user-dropdown          { background: #2D1C1C !important; border-color: var(--cream-border) !important; }
+[data-theme="dark"] .user-dropdown a,
+[data-theme="dark"] .user-dropdown button   { color: var(--text-secondary) !important; }
+[data-theme="dark"] .user-dropdown a:hover,
+[data-theme="dark"] .user-dropdown button:hover { background: var(--cream-dark) !important; }
+
+/* ============================================================ */
+
 * {
   box-sizing: border-box;
 }
@@ -198,11 +233,11 @@ button {
 ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
 
 /* ---- Responsive nav hide ---- */
+.desktop-nav { display: flex; }
+.mobile-nav-btn { display: none; }
 @media (max-width: 768px) {
   .desktop-nav { display: none; }
-}
-@media (min-width: 769px) {
-  .mobile-nav-btn { display: none; }
+  .mobile-nav-btn { display: flex; }
 }
 
 /* ---- Skeleton loading ---- */
@@ -274,4 +309,35 @@ button {
 @media (max-width: 768px) {
   .mobile-cart-bar { display: flex; }
   .mobile-only-block { display: block; }
+}
+
+/* ---- Page fade-in on route change ---- */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#main-content > * { animation: pageFadeIn 0.22s ease; }
+
+/* ---- Card hover lift ---- */
+.card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(107,32,32,0.13);
+}
+
+/* ---- Button press feedback ---- */
+.btn-maroon:active,
+.btn-gold:active,
+.btn-purple:active,
+.btn-outline-maroon:active {
+  transform: scale(0.97);
+}
+
+/* ---- Focus ring for accessibility ---- */
+:focus-visible {
+  outline: 2.5px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

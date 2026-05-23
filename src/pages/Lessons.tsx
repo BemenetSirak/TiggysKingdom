@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePageMeta } from '../hooks/usePageMeta';
+import EmptyState from '../components/EmptyState';
 
 interface YTPlayer {
   getCurrentTime(): number;
@@ -320,14 +321,17 @@ export default function Lessons() {
 
   return (
     <div>
-      <section style={{ background: 'linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%)', padding: '3.5rem 1.25rem', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.85)', margin: '0 0 0.25rem', fontSize: '1.05rem' }}>
-          ▶ Watch &amp; Learn
-        </p>
-        <h1 style={{ color: 'white', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+      <section style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '3.5rem 1.25rem', textAlign: 'center', borderBottom: '2px solid var(--cream-border)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+          </span>
+        </div>
+        <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
           Animated Adventures
         </h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, margin: 0 }}>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: 0 }}>
           New episodes every week — faith comes alive for ages 4-12
         </p>
       </section>
@@ -377,10 +381,11 @@ export default function Lessons() {
         )}
 
         {!loading && !error && videos.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📺</div>
-            <p style={{ fontWeight: 700 }}>No episodes found.</p>
-          </div>
+          <EmptyState
+            title="No episodes found"
+            message="Try adjusting your filters, or check back soon for new episodes from Tiggy's Kingdom!"
+            action={{ label: 'Browse All Episodes', to: '/episodes' }}
+          />
         )}
       </div>
     </div>

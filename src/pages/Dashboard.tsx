@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import EmptyState from '../components/EmptyState';
 
 import { API } from '../lib/api';
+import { STATUS_COLORS } from '../lib/constants';
 
 interface Order {
   id: string;
@@ -14,10 +16,9 @@ interface Order {
   cancellationRequested?: boolean;
 }
 
-const STATUS_COLORS: Record<string, string> = { placed: '#3B82F6', processing: '#F97316', shipped: '#7C3AED', delivered: '#22C55E', cancelled: '#EF4444' };
 
 export default function Dashboard() {
-  const { user, logout, getLastActivity, getWatchHistory } = useAuth();
+  const { user, logout, getLastActivity, getWatchHistory, updateUser } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -45,19 +46,15 @@ export default function Dashboard() {
       .finally(() => setOrdersLoading(false));
   }, [user, navigate]);
 
-  const handleSaveName = async () => {
+  const handleSaveName = () => {
     if (!newName.trim() || newName.trim() === user.name) { setEditName(false); return; }
     setSavingName(true);
-    const users = JSON.parse(localStorage.getItem('tk_users') || '[]');
-    const idx = users.findIndex(u => u.id === user.id);
-    if (idx !== -1) {
-      users[idx].name = newName.trim();
-      localStorage.setItem('tk_users', JSON.stringify(users));
-      const updated = { ...user, name: newName.trim() };
-      localStorage.setItem('tk_user', JSON.stringify(updated));
-      // Reload page to reflect new name in navbar
-      window.location.reload();
-    }
+    updateUser({ name: newName.trim() });
+    fetch(`${API}/api/users/${user.id}/name`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName.trim() }),
+    }).catch(() => {});
     setSavingName(false);
     setEditName(false);
     addToast('Name updated!', 'success');
@@ -71,20 +68,20 @@ export default function Dashboard() {
   return (
     <div style={{ background: 'var(--cream)', minHeight: '80vh' }}>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, var(--maroon) 0%, #8B2E2E 100%)', padding: '2.5rem 1.25rem' }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '2.5rem 1.25rem', borderBottom: '2px solid var(--cream-border)' }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
-          <div className="avatar-ring" style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', fontWeight: 900, color: 'white', flexShrink: 0 }}>
+          <div className="avatar-ring" style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--maroon)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', fontWeight: 900, color: 'white', flexShrink: 0 }}>
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 style={{ color: 'white', margin: 0, fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
+            <h1 style={{ color: 'var(--maroon)', margin: 0, fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
               Welcome back, {user.name.split(' ')[0]}! 🐑
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.7)', margin: '0.25rem 0 0', fontWeight: 600, fontSize: '0.9rem' }}>
+            <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0', fontWeight: 600, fontSize: '0.9rem' }}>
               {user.email} · Member for {daysSince < 1 ? 'less than a day' : `${daysSince} day${daysSince !== 1 ? 's' : ''}`}
             </p>
           </div>
-          <button onClick={() => { logout(); navigate('/'); }} style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: '0.5rem', padding: '0.4rem 1rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
+          <button onClick={() => { logout(); navigate('/'); }} style={{ marginLeft: 'auto', background: 'transparent', color: 'var(--maroon)', border: '1.5px solid var(--maroon)', borderRadius: '0.5rem', padding: '0.4rem 1rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
             Sign Out
           </button>
         </div>
@@ -95,7 +92,7 @@ export default function Dashboard() {
         {/* Quick stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
           {[
-            { icon: '🛒', label: 'Orders', value: orders.length + (ordersLoading ? '…' : ''), color: '#C9922A' },
+            { icon: '🛒', label: 'Orders', value: ordersLoading ? '…' : String(orders.length), color: '#C9922A' },
             { icon: '▶', label: 'Videos Watched', value: watchHistory.length > 0 ? `${watchHistory.length} episode${watchHistory.length !== 1 ? 's' : ''}` : 'None yet', color: '#3B82F6' },
             { icon: '📅', label: 'Member Since', value: joined.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), color: '#7C3AED' },
           ].map(s => (
@@ -137,7 +134,7 @@ export default function Dashboard() {
         )}
 
         {/* Watch history */}
-        {watchHistory.length > 1 && (
+        {watchHistory.length >= 1 && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
               <h2 style={{ color: 'var(--maroon)', fontSize: '1.05rem', margin: 0 }}>Watch History</h2>
@@ -225,9 +222,11 @@ export default function Dashboard() {
           {ordersLoading && <p style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem' }}>Loading…</p>}
 
           {!ordersLoading && orders.length === 0 && (
-            <div className="card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-              <p style={{ color: 'var(--text-muted)', fontWeight: 600, margin: '0 0 1rem' }}>No orders yet.</p>
-              <Link to="/shop" className="btn-gold" style={{ padding: '0.55rem 1.25rem', fontSize: '0.875rem' }}>Shop Now</Link>
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <EmptyState
+                message="No orders yet. Visit the shop to find something special for your family!"
+                action={{ label: 'Shop Now', to: '/shop' }}
+              />
             </div>
           )}
 
@@ -238,7 +237,7 @@ export default function Dashboard() {
                   <div>
                     <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '0.85rem', color: 'var(--maroon)' }}>{o.id}</span>
                     <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      {o.items?.map(i => i.title).join(', ').slice(0, 50)}{(o.items?.map(i => i.title).join(', ').length || 0) > 50 ? '…' : ''}
+                      {(t => t.length > 50 ? t.slice(0, 50) + '…' : t)(o.items?.map(i => i.title).join(', ') || '')}
                     </p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>

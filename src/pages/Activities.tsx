@@ -183,21 +183,24 @@ export default function Activities() {
   return (
     <div>
       {/* Hero */}
-      <section style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 50%, #7C3AED 100%)', padding: '3.5rem 1.25rem', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.85)', margin: '0 0 0.25rem', fontSize: '1.05rem' }}>
-          ✏️ Learn Through Play
-        </p>
-        <h1 style={{ color: 'white', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
+      <section style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '3.5rem 1.25rem', textAlign: 'center', borderBottom: '2px solid var(--cream-border)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+          </span>
+        </div>
+        <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
           Free Activities & Printables
         </h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, margin: '0 0 1.5rem' }}>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: '0 0 1.5rem' }}>
           Coloring pages, worksheets, crafts & more — all 100% free to download
         </p>
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           {[['87+', 'Free Downloads'], ['6', 'Categories'], ['All Ages', 'Covered']].map(([v, l]) => (
             <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{ color: 'white', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.75rem', lineHeight: 1 }}>{v}</div>
-              <div style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 600, fontSize: '0.8rem' }}>{l}</div>
+              <div style={{ color: 'var(--maroon)', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.75rem', lineHeight: 1 }}>{v}</div>
+              <div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem' }}>{l}</div>
             </div>
           ))}
         </div>

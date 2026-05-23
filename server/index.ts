@@ -76,8 +76,8 @@ const emailWelcome = (name: string, email: string) => sendMail(email, "Welcome t
   `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px">
     <h1 style="color:#6B2020">Welcome, ${name}! 🐑</h1>
     <p>You've joined <strong>Tiggy's Kingdom</strong> — a place where faith and wonder meet.</p>
-    <p>Explore our <a href="${CLIENT_ORIGIN}:5173/episodes" style="color:#C9922A">free episodes</a>, browse the <a href="${CLIENT_ORIGIN}:5173/shop" style="color:#C9922A">shop</a>, and download <a href="${CLIENT_ORIGIN}:5173/activities" style="color:#C9922A">free activities</a>.</p>
-    <p style="color:#888;font-size:12px">© 2025 Tiggy's Kingdom</p>
+    <p>Explore our <a href="${CLIENT_ORIGIN}/episodes" style="color:#C9922A">free episodes</a>, browse the <a href="${CLIENT_ORIGIN}/shop" style="color:#C9922A">shop</a>, and download <a href="${CLIENT_ORIGIN}/activities" style="color:#C9922A">free activities</a>.</p>
+    <p style="color:#888;font-size:12px">© ${new Date().getFullYear()} Tiggy's Kingdom</p>
   </div>`
 );
 
@@ -92,14 +92,20 @@ const emailOrderConfirmation = (order: OrderRow) => {
       <p>Hi ${order.customer_name || "there"}, your order <strong>${order.id}</strong> has been placed.</p>
       <ul>${itemsList}</ul>
       <p><strong>Total: $${order.total.toFixed(2)}</strong></p>
-      <p>Track your order at <a href="${CLIENT_ORIGIN}:5173/orders" style="color:#C9922A">Your Orders</a>.</p>
-      <p style="color:#888;font-size:12px">© 2025 Tiggy's Kingdom</p>
+      <p>Track your order at <a href="${CLIENT_ORIGIN}/orders" style="color:#C9922A">Your Orders</a>.</p>
+      <p style="color:#888;font-size:12px">© ${new Date().getFullYear()} Tiggy's Kingdom</p>
     </div>`
   );
 };
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: () => true, credentials: true }));
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || origin === CLIENT_ORIGIN || origin.startsWith('http://localhost')) cb(null, true);
+    else cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 
 // Stripe webhook — raw body before express.json()
 app.post("/webhook", express.raw({ type: "application/json" }), async (req: Request, res: Response) => {
@@ -147,6 +153,18 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   catch { res.status(401).json({ error: "Invalid or expired token" }); }
 };
 
+// ── Health check ─────────────────────────────────────────────────────────────
+app.get("/health", async (_req: Request, res: Response) => {
+  const tables = ['episodes', 'products', 'users', 'orders', 'subscribers', 'activity_log'];
+  const checks: Record<string, boolean> = {};
+  for (const t of tables) {
+    const { error } = await supabase.from(t).select('id').limit(1);
+    checks[t] = !error;
+  }
+  const allOk = Object.values(checks).every(Boolean);
+  res.status(allOk ? 200 : 207).json({ ok: allOk, supabase: checks, ts: new Date().toISOString() });
+});
+
 // ═════════════════════════════════════════════════════════════════════════════
 // PUBLIC ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
@@ -166,8 +184,8 @@ app.post("/create-checkout-session", async (req: Request, res: Response) => {
         },
         quantity: item.quantity || 1,
       })),
-      success_url: `${CLIENT_ORIGIN}:5173/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${CLIENT_ORIGIN}:5173/cart`,
+      success_url: `${CLIENT_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${CLIENT_ORIGIN}/cart`,
     });
     res.json({ url: session.url });
 
@@ -224,8 +242,8 @@ app.post("/create-subscription-session", async (req: Request, res: Response) => 
       }],
       subscription_data: { trial_period_days: 7 },
       customer_email: customerEmail || undefined,
-      success_url: `${CLIENT_ORIGIN}:5173/success?plan=${planId}`,
-      cancel_url:  `${CLIENT_ORIGIN}:5173/subscribe`,
+      success_url: `${CLIENT_ORIGIN}/success?plan=${planId}`,
+      cancel_url:  `${CLIENT_ORIGIN}/subscribe`,
     });
     res.json({ url: session.url });
   } catch (err: unknown) {
@@ -265,6 +283,15 @@ app.post("/api/users/register", async (req: Request, res: Response) => {
     await supabase.from("users").insert({ id, name, email, joined_date: joinedDate, created_at: new Date().toISOString() });
     emailWelcome(name, email);
   }
+  res.json({ success: true });
+});
+
+// ── Update user name ──────────────────────────────────────────────────────────
+app.put("/api/users/:id/name", async (req: Request, res: Response) => {
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: "Name required" });
+  const { error } = await supabase.from("users").update({ name: name.trim() }).eq("id", req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
@@ -330,19 +357,26 @@ app.post("/api/orders/:id/cancel-deny", async (req: Request, res: Response) => {
 });
 
 // ── Public products ───────────────────────────────────────────────────────────
-app.get("/api/products", async (_req: Request, res: Response) => {
-  const { data, error } = await supabase.from("products").select("*").eq("active", true);
+app.get("/api/products", async (req: Request, res: Response) => {
+  const limit  = Math.min(Number(req.query.limit)  || 100, 200);
+  const offset = Number(req.query.offset) || 0;
+  const { data, error } = await supabase
+    .from("products").select("*").eq("active", true)
+    .range(offset, offset + limit - 1);
   if (error) return res.status(500).json({ error: error.message });
   res.json(camelRows(data || []));
 });
 
 // ── Public episodes ───────────────────────────────────────────────────────────
-app.get("/api/episodes", async (_req: Request, res: Response) => {
+app.get("/api/episodes", async (req: Request, res: Response) => {
+  const limit  = Math.min(Number(req.query.limit)  || 100, 200);
+  const offset = Number(req.query.offset) || 0;
   const { data, error } = await supabase
     .from("episodes")
     .select("*")
     .eq("active", true)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .range(offset, offset + limit - 1);
   if (error) return res.status(500).json({ error: error.message });
   res.json((data || []).map(mapEpisode));
 });

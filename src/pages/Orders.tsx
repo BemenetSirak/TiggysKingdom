@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import EmptyState from '../components/EmptyState';
 
 import { API } from '../lib/api';
+import { STATUS_COLORS } from '../lib/constants';
 
 const STATUS_STEPS = ['placed', 'processing', 'shipped', 'delivered'];
-const STATUS_COLORS: Record<string, string> = {
-  placed: '#3B82F6',
-  processing: '#F97316',
-  shipped: '#7C3AED',
-  delivered: '#22C55E',
-  cancelled: '#EF4444',
-};
 
 interface OrderItem {
   id: number;
@@ -106,9 +101,14 @@ export default function Orders() {
   return (
     <div style={{ minHeight: '70vh', background: 'var(--cream)' }}>
       {/* Header */}
-      <div style={{ background: 'var(--maroon)', padding: '2.5rem 1.25rem', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.75)', margin: '0 0 0.25rem' }}>📦 My Account</p>
-        <h1 style={{ color: 'white', margin: 0, fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}>Order History</h1>
+      <div style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '2.5rem 1.25rem', textAlign: 'center', borderBottom: '2px solid var(--cream-border)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+          </span>
+        </div>
+        <h1 style={{ color: 'var(--maroon)', margin: 0, fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}>Order History</h1>
       </div>
 
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '2rem 1.25rem' }}>
@@ -120,16 +120,11 @@ export default function Orders() {
         )}
 
         {!loading && orders.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
-            <h2 style={{ color: 'var(--maroon)', marginBottom: '0.5rem' }}>No orders yet</h2>
-            <p style={{ color: 'var(--text-muted)', fontWeight: 600, marginBottom: '1.5rem' }}>
-              When you place an order, it will appear here.
-            </p>
-            <Link to="/shop" className="btn-gold" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>
-              Browse the Shop
-            </Link>
-          </div>
+          <EmptyState
+            title="No orders yet"
+            message="When you place an order, it will appear here. Browse our shop to find something special!"
+            action={{ label: 'Browse the Shop', to: '/shop' }}
+          />
         )}
 
         {!loading && orders.length > 0 && (

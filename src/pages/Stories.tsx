@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
-
 import { API } from '../lib/api';
+import { COVER_COLORS, COVER_DARKS } from '../lib/constants';
+
 const STORY_CATEGORIES = ['story', 'saint', 'prayer'];
 const BADGE_COLORS: Record<string, string> = { BESTSELLER: '#7C3AED', NEW: '#22C55E', POPULAR: '#F97316' };
 const AGE_FILTERS: { label: string; value: string | null }[] = [
@@ -39,7 +40,7 @@ export default function Stories() {
   }, []);
 
   const filtered = ageFilter
-    ? products.filter(p => p.ages && p.ages.split('-')[0] <= ageFilter && Number(p.ages.split('-')[1]) >= Number(ageFilter))
+    ? products.filter(p => p.ages && Number(p.ages.split('-')[0]) <= Number(ageFilter) && Number(p.ages.split('-')[1]) >= Number(ageFilter))
     : products;
 
   const handleAdd = (product: Product) => {
@@ -51,10 +52,15 @@ export default function Stories() {
   return (
     <div style={{ minHeight: '70vh', background: 'var(--cream)' }}>
       {/* Header */}
-      <div style={{ background: 'var(--maroon)', padding: '3rem 1.25rem', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'rgba(255,255,255,0.75)', margin: '0 0 0.25rem' }}>📖 Tiggy's Kingdom</p>
-        <h1 style={{ color: 'white', margin: '0 0 0.75rem', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)' }}>Sacred Stories</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, margin: '0 auto', maxWidth: 560 }}>
+      <div style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '3rem 1.25rem', textAlign: 'center', borderBottom: '2px solid var(--cream-border)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+          </span>
+        </div>
+        <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.75rem', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)' }}>Sacred Stories</h1>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: '0 auto', maxWidth: 560 }}>
           Beautiful storybooks about Jesus, the saints, and the wonders of Orthodox faith — crafted with love for children ages 3–12.
         </p>
       </div>
@@ -92,15 +98,13 @@ export default function Stories() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
             {filtered.map(product => {
               const outOfStock = Number(product.stock) === 0;
-              const COVER_COLORS = ['#7B2020','#1D4ED8','#EA580C','#6D28D9','#065F46','#B45309','#9D174D'];
-              const COVER_DARK   = ['#4A1515','#1E3A8A','#C2410C','#5B21B6','#064E3B','#92400E','#701A4A'];
               const c = product.id % COVER_COLORS.length;
               return (
                 <div key={product.id} className="card" style={{ position: 'relative', opacity: outOfStock ? 0.85 : 1 }}>
                   {/* Cover art */}
                   <div style={{
                     position: 'relative',
-                    background: `linear-gradient(160deg, ${COVER_COLORS[c]}, ${COVER_DARK[c]})`,
+                    background: `linear-gradient(160deg, ${COVER_COLORS[c]}, ${COVER_DARKS[c]})`,
                     paddingTop: '60%',
                     borderRadius: '0.75rem 0.75rem 0 0',
                   }}>

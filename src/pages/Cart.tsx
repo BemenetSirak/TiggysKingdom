@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth, type OrderActivity } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import EmptyState from '../components/EmptyState';
 
 import { API } from '../lib/api';
+import { COVER_COLORS, COVER_DARKS } from '../lib/constants';
 
 interface RecommendedProduct {
   id: number;
@@ -63,19 +65,16 @@ export default function Cart() {
     }
   };
 
-  const COVER_COLORS = ['#7B2020','#1D4ED8','#EA580C','#6D28D9','#065F46','#B45309'];
-  const COVER_DARKS  = ['#4A1515','#1E3A8A','#C2410C','#5B21B6','#064E3B','#92400E'];
 
   if (items.length === 0) {
     return (
       <div style={{ background: 'var(--cream)', minHeight: '70vh', padding: '3rem 1.25rem' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🛒</div>
-          <h2 style={{ color: 'var(--maroon)', marginBottom: '0.5rem' }}>Your cart is empty</h2>
-          <p style={{ color: 'var(--text-muted)', fontWeight: 600, marginBottom: '1.5rem' }}>
-            Discover books and gifts crafted for your family.
-          </p>
-          <Link to="/shop" className="btn-gold" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}>Browse the Shop</Link>
+          <EmptyState
+            title="Your cart is empty"
+            message="Discover books and gifts crafted for your family — all rooted in Orthodox faith."
+            action={{ label: 'Browse the Shop', to: '/shop' }}
+          />
 
           {recommended.length > 0 && (
             <div style={{ marginTop: '3rem', textAlign: 'left' }}>
@@ -129,7 +128,7 @@ export default function Cart() {
                 {/* Book cover */}
                 <div style={{
                   width: 72, height: 96, flexShrink: 0, borderRadius: '0.4rem',
-                  background: `linear-gradient(160deg, ${['#7B2020','#1D4ED8','#EA580C','#6D28D9','#065F46','#B45309'][item.id % 6]}, ${['#4A1515','#1E3A8A','#C2410C','#5B21B6','#064E3B','#92400E'][item.id % 6]})`,
+                  background: `linear-gradient(160deg, ${COVER_COLORS[item.id % COVER_COLORS.length]}, ${COVER_DARKS[item.id % COVER_DARKS.length]})`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem',
                   boxShadow: '2px 3px 8px rgba(0,0,0,0.25)',
                 }}>
