@@ -401,6 +401,19 @@ export default function Lessons() {
   // Reset display count when switching filters
   useEffect(() => { setDisplayCount(DISPLAY_PAGE_SIZE); }, [filter]);
 
+  // When resuming, ensure the target video is on-screen
+  useEffect(() => {
+    if (!resumeVideoId || loading || allVideos.length === 0) return;
+    const target = allVideos.find(v => v.id === resumeVideoId);
+    if (!target || target.isShort) return; // shorts don't support resume
+    const pool = target.isShort ? allVideos.filter(v => v.isShort) : allVideos.filter(v => !v.isShort);
+    const posInPool = pool.findIndex(v => v.id === resumeVideoId);
+    if (posInPool === -1) return;
+    const neededCount = posInPool + 1;
+    if (filter === 'shorts') setFilter('episodes');
+    setDisplayCount(c => Math.max(c, neededCount));
+  }, [resumeVideoId, allVideos, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const fetchPage = async (pageToken?: string) => {
     if (pageToken) setLoadingMore(true); else setLoading(true);
     setError(null);

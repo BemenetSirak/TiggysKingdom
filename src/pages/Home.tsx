@@ -7,30 +7,25 @@ import EmptyState from '../components/EmptyState';
 
 import { API } from '../lib/api';
 
+const YT_API_KEY  = import.meta.env.VITE_YOUTUBE_API_KEY || '';
+const CHANNEL_ID  = 'UCY6m20ZtWVjAtbGqcqTYQng';
+
+type VideoFilter = 'all' | 'episodes' | 'shorts';
+
+interface YTVideo { id: string; title: string; isShort: boolean; }
+
+function parseDuration(iso: string): number {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return 0;
+  return (parseInt(m[1] || '0') * 3600) + (parseInt(m[2] || '0') * 60) + parseInt(m[3] || '0');
+}
+
 const ADVENTURE_CARDS = [
   { title: 'Animated Adventures', desc: 'Watch Tiggy explore ancient churches, learn about saints, and discover the beauty of Orthodox faith.', cta: 'Watch Now →', to: '/episodes', bg: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)', icon: '▶', iconBg: '#F97316' },
   { title: 'Sacred Stories', desc: 'Beautiful storybooks about Jesus, the saints, and the wonders of faith — crafted for ages 4-12.', cta: 'Browse Books →', to: '/shop', bg: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', icon: '📖', iconBg: '#C9922A' },
   { title: 'Creative Corner', desc: 'Coloring pages, crafts, and activities that bring the faith to life through play and creativity.', cta: 'Start Creating →', to: '/activities', bg: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', icon: '✏️', iconBg: '#A855F7' },
 ];
 
-interface Episode {
-  id: string | number;
-  videoId: string | null;
-  title: string;
-  order?: number;
-  ages?: string;
-  badge?: string | null;
-  color?: string;
-  featured?: boolean;
-}
-
-// Static fallback episodes if server returns empty
-const FALLBACK_EPISODES: Episode[] = [
-  { id: '1', videoId: null, title: 'The Good Shepherd', order: 12, ages: '6-9', badge: 'NEW', color: '#3B82F6' },
-  { id: '2', videoId: null, title: "Saint Yared's Gift", order: 11, ages: '5-9', badge: 'POPULAR', color: '#F97316' },
-  { id: '3', videoId: null, title: 'The Holy Cross', order: 10, ages: '4-8', badge: null, color: '#7C3AED' },
-  { id: '4', videoId: null, title: "Tiggy's First Fast", order: 9, ages: '5-9', badge: null, color: '#22C55E' },
-];
 
 const TESTIMONIALS = [
   { quote: "Tiggy has transformed our family prayer time! My children actually ask to watch episodes and then we discuss the saints together. It's brought our Orthodox faith to life in a way I never imagined possible.", name: 'Maria S.', role: 'Mother of 3, Chicago' },
@@ -38,20 +33,7 @@ const TESTIMONIALS = [
   { quote: "My 5-year-old asked to read the Saint Yared book every night for a month. Seeing her fall in love with our Ethiopian Orthodox heritage through Tiggy is a blessing beyond words.", name: 'Sara T.', role: 'Mother of 2, Atlanta' },
 ];
 
-const AGE_GROUPS = [
-  { label: 'All Ages', min: 0, max: 99 },
-  { label: '3–5', min: 3, max: 5 },
-  { label: '6–8', min: 6, max: 8 },
-  { label: '9–12', min: 9, max: 12 },
-];
-
 const EP_COLORS = ['#3B82F6', '#F97316', '#7C3AED', '#22C55E', '#EF4444', '#C9922A'];
-
-function parseAges(str: string | undefined) {
-  if (!str) return { min: 0, max: 99 };
-  const parts = String(str).split(/[-–]/).map(Number);
-  return { min: parts[0] || 0, max: parts[1] || parts[0] || 99 };
-}
 
 function fmtTime(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s) % 60).padStart(2, '0')}`;
@@ -65,18 +47,37 @@ export default function Home() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [testimonialPaused, setTestimonialPaused] = useState(false);
   const [email, setEmail] = useState('');
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [ageFilter, setAgeFilter] = useState(0);
+  const [ytVideos, setYtVideos]     = useState<YTVideo[]>([]);
+  const [ytLoading, setYtLoading]   = useState(true);
+  const [videoFilter, setVideoFilter] = useState<VideoFilter>('all');
   const [continueWatching, setContinueWatching] = useState<VideoProgress | null>(null);
   const { addToast } = useToast();
   const { user, getWatchHistory } = useAuth();
 
-  // Fetch curated episodes from server
+  // Fetch latest videos from YouTube channel
   useEffect(() => {
-    fetch(`${API}/api/episodes`)
+    if (!YT_API_KEY) { setYtLoading(false); return; }
+    fetch(`https://www.googleapis.com/youtube/v3/search?key=${YT_API_KEY}&channelId=${CHANNEL_ID}&part=id&type=video&order=date&maxResults=10`)
       .then(r => r.json())
-      .then(data => { if (Array.isArray(data) && data.length > 0) setEpisodes(data); else setEpisodes(FALLBACK_EPISODES); })
-      .catch(() => setEpisodes(FALLBACK_EPISODES));
+      .then(async data => {
+        if (data.error || !data.items?.length) return;
+        const ids = data.items.map((i: { id: { videoId: string } }) => i.id.videoId).join(',');
+        const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?key=${YT_API_KEY}&id=${ids}&part=snippet,contentDetails`);
+        const vData = await vRes.json();
+        const mapped: YTVideo[] = (vData.items || []).map((v: {
+          id: string;
+          snippet: { title: string; description: string };
+          contentDetails: { duration: string };
+        }) => {
+          const dur     = parseDuration(v.contentDetails?.duration || '');
+          const title   = v.snippet.title || '';
+          const isShort = dur <= 60 || /\#shorts/i.test(title + ' ' + (v.snippet.description || ''));
+          return { id: v.id, title, isShort };
+        });
+        setYtVideos(mapped);
+      })
+      .catch(() => {})
+      .finally(() => setYtLoading(false));
   }, []);
 
   // Auto-rotate testimonials every 5s (pause on hover)
@@ -88,10 +89,10 @@ export default function Home() {
 
   // Continue watching — find most recent in-progress video
   useEffect(() => {
-    if (!user?.id || user.id === 'guest') return;
+    if (!user?.id || user.id === 'guest') { setContinueWatching(null); return; }
     const history = getWatchHistory(user.id);
-    const inProgress = history.find(h => h.timestamp > 30 && h.duration > 0 && (h.timestamp / h.duration) < 0.9);
-    if (inProgress) setContinueWatching(inProgress);
+    const inProgress = history.find(h => h.timestamp > 30 && h.duration > 0 && (h.timestamp / h.duration) < 0.9) ?? null;
+    setContinueWatching(prev => prev?.videoId === inProgress?.videoId ? prev : inProgress);
   }, [user, getWatchHistory]);
 
   const handleSubscribe = async (e: FormEvent) => {
@@ -107,12 +108,12 @@ export default function Home() {
     setEmail('');
   };
 
-  // Filter episodes by age group
-  const group = AGE_GROUPS[ageFilter];
-  const filteredEps = episodes.filter(ep => {
-    const { min, max } = parseAges(ep.ages);
-    return min <= group.max && max >= group.min;
-  }).slice(0, 4);
+  const filteredVideos = videoFilter === 'all'
+    ? ytVideos
+    : videoFilter === 'episodes'
+      ? ytVideos.filter(v => !v.isShort)
+      : ytVideos.filter(v => v.isShort);
+  const displayVideos = filteredVideos.slice(0, videoFilter === 'shorts' ? 6 : 4);
 
   const t = TESTIMONIALS[testimonialIndex];
 
@@ -192,70 +193,112 @@ export default function Home() {
           </h2>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 0 1.25rem' }}>New episodes added every week</p>
 
-          {/* Age filter pills */}
+          {/* Filter tabs */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            {AGE_GROUPS.map((g, i) => (
+            {(['all', 'episodes', 'shorts'] as VideoFilter[]).map(f => (
               <button
-                key={g.label}
-                onClick={() => setAgeFilter(i)}
+                key={f}
+                onClick={() => setVideoFilter(f)}
                 style={{
-                  padding: '0.35rem 1rem', borderRadius: '9999px', border: 'none', cursor: 'pointer',
+                  padding: '0.35rem 1rem', borderRadius: '9999px', cursor: 'pointer',
+                  border: f === 'shorts' && videoFilter === f ? '2px solid #EF4444' : '2px solid transparent',
                   fontWeight: 700, fontSize: '0.85rem', transition: 'all 0.15s',
-                  background: ageFilter === i ? 'var(--maroon)' : 'var(--cream-dark)',
-                  color: ageFilter === i ? 'white' : 'var(--text-secondary)',
-                  boxShadow: ageFilter === i ? '0 2px 8px rgba(107,32,32,0.25)' : 'none',
+                  background: videoFilter === f ? (f === 'shorts' ? '#EF4444' : 'var(--maroon)') : 'var(--cream-dark)',
+                  color: videoFilter === f ? 'white' : 'var(--text-secondary)',
+                  boxShadow: videoFilter === f ? '0 2px 8px rgba(107,32,32,0.25)' : 'none',
                 }}
-              >{i === 0 ? g.label : `Ages ${g.label}`}</button>
+              >
+                {f === 'all' ? 'All' : f === 'episodes' ? 'Episodes' : 'Shorts'}
+              </button>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
-            {filteredEps.length > 0 ? filteredEps.map((ep, idx) => {
-              const color = EP_COLORS[idx % EP_COLORS.length];
-              const hasThumb = ep.videoId;
-              return (
-                <div key={ep.id} className="card" style={{ cursor: 'pointer' }}>
-                  <div style={{ position: 'relative', background: `linear-gradient(135deg, ${color}33, ${color}88)`, paddingTop: '56.25%' }}>
-                    {hasThumb ? (
+          {/* Loading skeleton */}
+          {ytLoading && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="card" style={{ pointerEvents: 'none' }}>
+                  <div className="skeleton" style={{ paddingTop: '56.25%' }} />
+                  <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div className="skeleton" style={{ height: 16, width: '80%', borderRadius: '0.4rem' }} />
+                    <div className="skeleton" style={{ height: 32, borderRadius: '0.75rem' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Episode grid (16:9) */}
+          {!ytLoading && videoFilter !== 'shorts' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
+              {displayVideos.length > 0 ? displayVideos.map((v, idx) => {
+                const color = EP_COLORS[idx % EP_COLORS.length];
+                return (
+                  <div key={v.id} className="card">
+                    <div style={{ position: 'relative', background: `${color}22`, paddingTop: '56.25%' }}>
                       <img
-                        src={`https://i.ytimg.com/vi/${ep.videoId}/mqdefault.jpg`}
-                        alt={ep.title}
+                        src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`}
+                        alt={v.title}
                         loading="lazy"
                         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
-                    ) : null}
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', color }}>▶</div>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', color }}>▶</div>
+                      </div>
+                      {v.isShort && (
+                        <span style={{ position: 'absolute', top: 10, left: 10, background: '#EF4444', color: 'white', borderRadius: '0.5rem', padding: '0.2rem 0.55rem', fontSize: '0.7rem', fontWeight: 900 }}>SHORT</span>
+                      )}
                     </div>
-                    {ep.badge && (
-                      <span style={{ position: 'absolute', top: 10, left: 10, background: color, color: 'white', borderRadius: '0.5rem', padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 900 }}>{ep.badge || (ep.featured ? 'FEATURED' : null)}</span>
-                    )}
-                    <span style={{ position: 'absolute', top: 10, right: 10, background: 'var(--maroon)', color: 'white', borderRadius: '0.5rem', padding: '0.2rem 0.5rem', fontSize: '0.7rem', fontWeight: 700 }}>Ep. {ep.order || idx + 1}</span>
-                  </div>
-                  <div style={{ padding: '1rem' }}>
-                    <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '1rem', margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>{ep.title}</h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <span style={{ background: '#DBEAFE', color: '#1D4ED8', borderRadius: '0.375rem', padding: '0.15rem 0.5rem', fontSize: '0.75rem', fontWeight: 700 }}>Ages {ep.ages}</span>
+                    <div style={{ padding: '1rem' }}>
+                      <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '1rem', margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>{v.title}</h3>
                       <StarRating count={5} />
+                      <Link to="/episodes" state={{ resumeVideoId: v.id }}
+                        style={{ display: 'block', textAlign: 'center', background: 'var(--gold-pale)', color: 'var(--maroon)', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem', marginTop: '0.5rem' }}
+                      >Watch Now</Link>
                     </div>
-                    <Link
-                      to="/episodes"
-                      state={ep.videoId ? { resumeVideoId: ep.videoId } : undefined}
-                      style={{ display: 'block', textAlign: 'center', background: 'var(--gold-pale)', color: 'var(--maroon)', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem' }}
-                    >Watch Now</Link>
                   </div>
+                );
+              }) : (
+                <div style={{ gridColumn: '1/-1' }}>
+                  <EmptyState message="No episodes yet — check back soon!" action={{ label: 'View All', to: '/episodes' }} />
                 </div>
-              );
-            }) : (
-              <div style={{ gridColumn: '1/-1' }}>
-                <EmptyState
-                  message="No episodes for this age range yet — check back soon!"
-                  action={{ label: 'View All Episodes', to: '/episodes' }}
-                />
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
+
+          {/* Shorts grid (9:16 portrait) */}
+          {!ytLoading && videoFilter === 'shorts' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.875rem' }}>
+              {displayVideos.length > 0 ? displayVideos.map(v => (
+                <Link key={v.id} to="/episodes" style={{ display: 'block', borderRadius: '0.875rem', overflow: 'hidden', background: '#111', textDecoration: 'none' }}>
+                  <div style={{ position: 'relative', paddingTop: '177.78%', overflow: 'hidden' }}>
+                    <img
+                      src={`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`}
+                      alt={v.title}
+                      loading="lazy"
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`; }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.3) 45%, transparent 100%)' }} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: 'var(--maroon)', fontSize: '0.9rem', marginLeft: '3px' }}>▶</span>
+                      </div>
+                    </div>
+                    <span style={{ position: 'absolute', top: 8, left: 8, background: '#EF4444', color: 'white', borderRadius: '0.3rem', padding: '0.15rem 0.45rem', fontSize: '0.6rem', fontWeight: 900 }}>SHORT</span>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.625rem' }}>
+                      <p style={{ color: 'white', fontWeight: 800, fontSize: '0.75rem', margin: 0, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>{v.title}</p>
+                    </div>
+                  </div>
+                </Link>
+              )) : (
+                <div style={{ gridColumn: '1/-1' }}>
+                  <EmptyState message="No shorts yet — check back soon!" action={{ label: 'View All', to: '/episodes' }} />
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <Link to="/episodes" className="btn-maroon">View All Episodes →</Link>
           </div>
