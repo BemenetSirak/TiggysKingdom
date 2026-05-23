@@ -478,8 +478,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
               © {new Date().getFullYear()} Tiggy's Kingdom ·{' '}
               <Link to="/privacy" style={{ color: 'var(--text-muted)' }}>Privacy</Link> ·{' '}
-              <Link to="/terms" style={{ color: 'var(--text-muted)' }}>Terms</Link>
-            </p>
+              <Link to="/terms" style={{ color: 'var(--text-muted)' }}>Terms</Link>            </p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               {['✓ Theologically Reviewed', '✓ Ad-Free Always', '✓ Orthodox Values'].map(b => (
                 <span key={b} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--gold-dark)' }}>{b}</span>

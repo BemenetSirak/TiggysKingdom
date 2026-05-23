@@ -18,8 +18,9 @@ try {
 // ── Config ────────────────────────────────────────────────────────────────────
 const PORT          = process.env.PORT             || 4242;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
-const JWT_SECRET    = process.env.JWT_SECRET       || "tiggy-kingdom-admin-secret-2025";
-const ADMIN_PASSWORD= process.env.ADMIN_PASSWORD   || "tiggy2025";
+const JWT_SECRET    = process.env.JWT_SECRET        || "tiggy-kingdom-admin-secret-2025";
+const ADMIN_EMAIL   = process.env.ADMIN_EMAIL       || "admin@admin.com";
+const ADMIN_PASSWORD= process.env.ADMIN_PASSWORD    || "admin1";
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN    || "http://localhost";
 
 const stripe = new Stripe(STRIPE_SECRET);
@@ -385,27 +386,10 @@ app.get("/api/episodes", async (req: Request, res: Response) => {
 // ADMIN ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
 
-app.post("/api/admin/login", async (req: Request, res: Response) => {
+app.post("/api/admin/login", (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Email and password required" });
-  if (password !== ADMIN_PASSWORD) return res.status(401).json({ error: "Invalid credentials" });
-
-  // Check Supabase admins table with a timeout fallback
-  let authorised = false;
-  try {
-    const { data } = await Promise.race([
-      supabase.from("admins").select("email").eq("email", email).maybeSingle(),
-      new Promise<{ data: null }>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-    ]);
-    authorised = !!data;
-  } catch {
-    // Supabase unavailable — fall back to env-based admin list
-    const envAdmins = (process.env.ADMIN_EMAILS || "bemenetzeleke0@gmail.com").split(",").map(e => e.trim());
-    authorised = envAdmins.includes(email);
-  }
-
-  if (!authorised) return res.status(401).json({ error: "Not authorised as admin" });
-
+  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) return res.status(401).json({ error: "Invalid credentials" });
   const token = jwt.sign({ email, role: "admin" }, JWT_SECRET, { expiresIn: "8h" });
   res.json({ token, email });
 });

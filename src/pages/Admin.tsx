@@ -969,6 +969,7 @@ export default function Admin() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
   const [toasts, setToasts] = useState<AdminToast[]>([]);
+  const [sessionMinsLeft, setSessionMinsLeft] = useState<number | null>(null);
   const navigate = useNavigate();
 
   const addToast = (message: string, type = 'success') => {
@@ -977,9 +978,27 @@ export default function Admin() {
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
   };
 
-  // Load stats + orders for sparkline
+  // Load stats + orders for sparkline; track session expiry
   useEffect(() => {
-    if (!token()) { navigate('/admin/login'); return; }
+    const t = token();
+    if (!t) { navigate('/admin/login'); return; }
+
+    // Decode JWT to compute session time remaining
+    try {
+      const payload = JSON.parse(atob(t.split('.')[1]));
+      const minsLeft = Math.floor((payload.exp * 1000 - Date.now()) / 60000);
+      setSessionMinsLeft(minsLeft);
+      const tick = setInterval(() => {
+        const remaining = Math.floor((payload.exp * 1000 - Date.now()) / 60000);
+        setSessionMinsLeft(remaining);
+        if (remaining <= 0) { navigate('/admin/login'); }
+      }, 60000);
+      return () => clearInterval(tick);
+    } catch { /* ignore malformed token */ }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!token()) return;
     Promise.all([
       apiFetch('/api/admin/stats'),
       apiFetch('/api/admin/orders'),
@@ -1039,19 +1058,26 @@ export default function Admin() {
       </div>
 
       {/* Top bar */}
-      <header style={{ background: 'var(--maroon)', padding: '0 1.5rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/tiggy.png" alt="Tiggy" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(201,146,42,0.6)', flexShrink: 0 }} />
-          <span style={{ color: 'white', fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem' }}>Tiggy's Kingdom</span>
-          <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 0.25rem' }}>/</span>
-          <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 600, fontSize: '0.9rem' }}>Admin</span>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontFamily: 'monospace', display: 'none' /* hint */ }}>
-            o/p/r/s/u/e/l
+      <header style={{ background: 'var(--maroon)', padding: '0 1.5rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--gold)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1rem', color: 'white', lineHeight: 1.1 }}>
+            Tiggy's<br /><span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.1em' }}>KINGDOM</span>
           </span>
-          <a href="/" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.85rem' }}>View Site →</a>
-          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Log Out</button>
+          <span style={{ color: 'rgba(255,255,255,0.35)', margin: '0 0.1rem', fontSize: '1.1rem' }}>|</span>
+          <span style={{ background: 'rgba(255,255,255,0.15)', color: 'white', borderRadius: '0.4rem', padding: '0.2rem 0.6rem', fontWeight: 800, fontSize: '0.72rem', letterSpacing: '0.06em' }}>ADMIN</span>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {sessionMinsLeft !== null && sessionMinsLeft <= 30 && (
+            <span style={{ background: '#FEF3C7', color: '#92400E', borderRadius: '0.4rem', padding: '0.2rem 0.6rem', fontSize: '0.72rem', fontWeight: 800 }}>
+              ⚠ Session expires in {sessionMinsLeft}m
+            </span>
+          )}
+          <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 600, display: 'none' }}>
+            {localStorage.getItem('tk_admin_user') || ''}
+          </span>
+          <a href="/" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: '0.82rem', textDecoration: 'none' }}>View Site ↗</a>
+          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '0.5rem', padding: '0.35rem 0.875rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Log Out</button>
         </div>
       </header>
 
@@ -1083,22 +1109,37 @@ export default function Admin() {
             );
           })}
 
-          {/* Quick stats in sidebar */}
-          {stats && (
-            <div style={{ marginTop: 'auto', padding: '1.25rem', borderTop: '1px solid var(--cream-border)' }}>
-              <p style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quick Stats</p>
-              {[
-                ['Revenue', `$${stats.revenue.toFixed(0)}`],
-                ['Orders', stats.orders.total],
-                ['Subscribers', stats.subscribers.active],
-              ].map(([k, v]) => (
-                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{k}</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--maroon)' }}>{v}</span>
-                </div>
-              ))}
+          {/* Sidebar footer: stats + session info */}
+          <div style={{ marginTop: 'auto', borderTop: '1px solid var(--cream-border)' }}>
+            {stats && (
+              <div style={{ padding: '1rem 1.25rem 0.75rem' }}>
+                <p style={{ fontWeight: 700, fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quick Stats</p>
+                {[
+                  ['Revenue', `$${stats.revenue.toFixed(0)}`],
+                  ['Orders', stats.orders.total],
+                  ['Subscribers', stats.subscribers.active],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{k}</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--maroon)' }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ padding: '0.6rem 1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--maroon)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>A</div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {localStorage.getItem('tk_admin_user') || 'Admin'}
+                </p>
+                {sessionMinsLeft !== null && (
+                  <p style={{ margin: 0, fontSize: '0.68rem', color: sessionMinsLeft <= 30 ? '#DC2626' : 'var(--text-muted)', fontWeight: 600 }}>
+                    {sessionMinsLeft > 60 ? `${Math.floor(sessionMinsLeft / 60)}h ${sessionMinsLeft % 60}m left` : `${sessionMinsLeft}m left`}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </aside>
 
         {/* Main content */}
@@ -1174,6 +1215,32 @@ export default function Admin() {
                     </div>
                   );
                 })()}
+              </div>
+
+              {/* Quick Actions */}
+              <div style={{ background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 2px 12px rgba(107,32,32,0.07)', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', color: 'var(--text-secondary)' }}>Quick Actions</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
+                  {[
+                    { label: '+ New Product',    tab: 'products',    icon: '📦', color: '#6B2020' },
+                    { label: 'View New Orders',  tab: 'orders',      icon: '🛒', color: '#7C3AED' },
+                    { label: 'Email Blast',       tab: 'subscribers', icon: '✉️', color: '#3B82F6' },
+                    { label: 'View Users',        tab: 'users',       icon: '👥', color: '#22C55E' },
+                    { label: 'Manage Episodes',   tab: 'episodes',    icon: '▶',  color: '#F97316' },
+                    { label: 'Activity Log',      tab: 'activity',    icon: '📋', color: '#C9922A' },
+                  ].map(a => (
+                    <button
+                      key={a.tab}
+                      onClick={() => setTab(a.tab)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.875rem', border: `1.5px solid ${a.color}22`, borderRadius: '0.6rem', background: `${a.color}08`, cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem', color: a.color, transition: 'all 0.15s', textAlign: 'left' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${a.color}18`; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `${a.color}08`; }}
+                    >
+                      <span style={{ fontSize: '1rem' }}>{a.icon}</span>
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div style={{ background: 'var(--cream-dark)', borderRadius: '1rem', padding: '1.25rem 1.5rem' }}>
