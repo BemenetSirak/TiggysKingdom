@@ -1,4 +1,27 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
+
+function TiggyHero() {
+  const ref = useRef<HTMLImageElement>(null);
+  const handleClick = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.classList.remove('bouncing');
+    void el.offsetWidth; // reflow to restart
+    el.classList.add('bouncing');
+    el.addEventListener('animationend', () => el.classList.remove('bouncing'), { once: true });
+  }, []);
+  return (
+    <img
+      ref={ref}
+      src="/tiggy-hero.png"
+      alt="Tiggy the Lamb"
+      className="tiggy-hero"
+      onClick={handleClick}
+      title="Click me!"
+      style={{ width: '100%', maxHeight: 500, objectFit: 'contain', filter: 'drop-shadow(0 24px 48px rgba(107,32,32,0.2))' }}
+    />
+  );
+}
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -128,12 +151,8 @@ export default function Home() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="tiggy-float" style={{ maxWidth: 420, width: '100%' }}>
-              <img
-                src="/tiggy.png"
-                alt="Tiggy the Lamb"
-                style={{ width: '100%', maxHeight: 480, objectFit: 'contain', filter: 'drop-shadow(0 24px 48px rgba(107,32,32,0.18))' }}
-              />
+            <div style={{ maxWidth: 460, width: '100%' }}>
+              <TiggyHero />
             </div>
           </div>
         </div>
@@ -149,19 +168,22 @@ export default function Home() {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
             {([
-              { color: '#C0392B', label: 'Play',  subtitle: 'Joyful adventures',  desc: "Songs, animated episodes, and games that make faith feel like the best kind of fun.",                              cta: 'Start playing →',  to: '/activities' },
-              { color: '#2E8B57', label: 'Learn', subtitle: 'Saints & feasts',    desc: "Gentle, faithful storytelling that teaches the lives of the saints and the meaning of the Church year.",           cta: 'Start learning →', to: '/episodes'   },
-              { color: '#2C5FA0', label: 'Grow',  subtitle: 'With God',           desc: "Simple prayers, kindness, and quiet moments that help little hearts grow close to Christ.",                         cta: 'Start growing →',  to: '/calendar'   },
+              { color: '#C0392B', label: 'Play',  subtitle: 'Joyful adventures',  desc: "Songs, animated episodes, and games that make faith feel like the best kind of fun.",                              cta: 'Start playing →',  to: '/activities', img: '/tiggy-wave.png'  },
+              { color: '#2E8B57', label: 'Learn', subtitle: 'Saints & feasts',    desc: "Gentle, faithful storytelling that teaches the lives of the saints and the meaning of the Church year.",           cta: 'Start learning →', to: '/episodes',   img: '/tiggy-point.png' },
+              { color: '#2C5FA0', label: 'Grow',  subtitle: 'With God',           desc: "Simple prayers, kindness, and quiet moments that help little hearts grow close to Christ.",                         cta: 'Start growing →',  to: '/calendar',   img: '/tiggy-pray.png'  },
             ] as const).map(card => (
-              <div key={card.label} className="card" style={{ overflow: 'hidden', textAlign: 'center' }}>
-                <div style={{ background: card.color, padding: '2rem 1.5rem 1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625rem' }}>
-                  <div style={{ width: 82, height: 82, borderRadius: '50%', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.45)', flexShrink: 0 }}>
-                    <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                  <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.9rem', margin: 0, fontWeight: 700 }}>{card.label}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, margin: 0, fontSize: '0.9rem' }}>{card.subtitle}</p>
+              <div key={card.label} className="card" style={{ overflow: 'hidden', textAlign: 'center', borderTop: `4px solid ${card.color}` }}>
+                <div style={{ padding: '2rem 1.5rem 0.75rem', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <img
+                    src={card.img}
+                    alt={`Tiggy — ${card.label}`}
+                    style={{ width: 160, height: 180, objectFit: 'contain', filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.12))' }}
+                    onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }}
+                  />
+                  <h3 style={{ fontFamily: 'Playfair Display, serif', color: card.color, fontSize: '2rem', margin: '0.5rem 0 0', fontWeight: 700 }}>{card.label}</h3>
+                  <p style={{ color: '#1B2A4A', fontWeight: 800, margin: '0.2rem 0 0', fontSize: '0.9rem' }}>{card.subtitle}</p>
                 </div>
-                <div style={{ padding: '1.5rem 1.75rem 1.75rem', background: 'white' }}>
+                <div style={{ padding: '1.1rem 1.75rem 1.75rem', background: 'white' }}>
                   <p style={{ color: 'var(--text-secondary)', lineHeight: 1.65, fontWeight: 600, margin: '0 0 1.25rem', fontSize: '0.925rem' }}>{card.desc}</p>
                   <Link
                     to={card.to}
@@ -297,7 +319,7 @@ export default function Home() {
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <div className="tiggy-float" style={{ maxWidth: 320, margin: '0 auto' }}>
-              <img src="/tiggy.png" alt="Tiggy the Lamb" style={{ width: '100%', maxHeight: 380, objectFit: 'contain', filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.45))' }} />
+              <img src="/tiggy-pray.png" alt="Tiggy praying" style={{ width: '100%', maxHeight: 380, objectFit: 'contain', filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.45))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
             </div>
           </div>
           <div>
@@ -356,8 +378,8 @@ export default function Home() {
       {/* ===== NEWSLETTER ===== */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 1.5rem', border: '3px solid var(--gold)', boxShadow: '0 4px 16px rgba(201,146,42,0.25)' }}>
-            <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ width: 120, height: 130, margin: '0 auto 1rem', overflow: 'hidden' }}>
+            <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(201,146,42,0.25))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
           </div>
           <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', margin: '0 0 0.875rem', color: 'var(--text-primary)' }}>Join Tiggy's Kingdom Mail ✉</h2>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: '0 0 2rem', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto', fontSize: '1rem' }}>

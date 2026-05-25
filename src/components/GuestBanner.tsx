@@ -16,8 +16,8 @@ export default function GuestBanner({ message = 'Create a free account to save y
       flexWrap: 'wrap',
       marginBottom: '1.5rem',
     }}>
-      <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(201,146,42,0.6)' }}>
-        <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{ width: 52, height: 58, flexShrink: 0, overflow: 'hidden' }}>
+        <img src="/tiggy-wave.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
       </div>
       <p style={{ flex: 1, margin: 0, color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: '0.9rem', lineHeight: 1.55, minWidth: 180 }}>
         {message}

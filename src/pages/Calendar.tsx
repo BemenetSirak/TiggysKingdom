@@ -152,8 +152,8 @@ export default function Calendar() {
       {/* ── Hero ── */}
       <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
-          <div className="tiggy-float" style={{ width: 110, height: 110, margin: '0 auto 1.25rem' }}>
-            <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} />
+          <div className="tiggy-float" style={{ width: 130, height: 145, margin: '0 auto 1.25rem' }}>
+            <img src="/tiggy-pray.png" alt="Tiggy praying" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
             🙏 The Prayer Corner
@@ -172,7 +172,7 @@ export default function Calendar() {
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '3rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ maxWidth: 260, margin: '0 auto' }}>
-              <img src="/tiggy.png" alt="Tiggy praying" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', filter: 'drop-shadow(0 12px 28px rgba(0,0,0,0.4))' }} />
+              <img src="/tiggy-pray.png" alt="Tiggy praying" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', filter: 'drop-shadow(0 12px 28px rgba(0,0,0,0.4))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
             </div>
           </div>
           <div>
@@ -334,8 +334,8 @@ export default function Calendar() {
       <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 580, margin: '0 auto' }}>
           <div className="card" style={{ padding: '2.5rem', textAlign: 'center', background: 'white' }}>
-            <div style={{ width: 70, height: 70, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 1.25rem', border: '3px solid var(--gold)' }}>
-              <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{ width: 110, height: 120, margin: '0 auto 1rem', overflow: 'hidden' }}>
+              <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
             </div>
             <h2 style={{ fontSize: 'clamp(1.35rem, 3vw, 1.75rem)', margin: '0 0 0.75rem', color: '#1B2A4A' }}>Weekly feast reminders 🔔</h2>
             <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.65, margin: '0 0 1.75rem', fontSize: '0.95rem' }}>

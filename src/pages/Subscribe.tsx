@@ -109,8 +109,8 @@ export default function Subscribe() {
       {/* ── Hero ── */}
       <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <div className="tiggy-float" style={{ width: 110, height: 110, margin: '0 auto 1.25rem' }}>
-            <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} />
+          <div className="tiggy-float" style={{ width: 130, height: 145, margin: '0 auto 1.25rem' }}>
+            <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
             👨‍👩‍👧 The Parent Corner
@@ -257,7 +257,7 @@ export default function Subscribe() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '2rem', alignItems: 'center' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ maxWidth: 130, margin: '0 auto' }}>
-                  <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', objectFit: 'contain' }} />
+                  <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', objectFit: 'contain' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
                 </div>
               </div>
               <div>
