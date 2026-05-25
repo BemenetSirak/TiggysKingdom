@@ -12,8 +12,11 @@ const ThemeContext = createContext<ThemeContextValue>({ theme: 'light', toggleTh
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('tk_theme') as Theme | null;
-    if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Only honour an explicitly saved 'light' preference; ignore old dark values
+    if (saved === 'light') return 'light';
+    // Clear any stale dark preference so it never auto-applies
+    localStorage.removeItem('tk_theme');
+    return 'light';
   });
 
   useEffect(() => {
