@@ -1,252 +1,262 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { API } from '../lib/api';
+import { useToast } from '../context/ToastContext';
 
-const AGE_FILTERS: string[] = ['All Ages', 'Ages 3-5', 'Ages 6-9', 'Ages 9-12'];
+// ── Admin-editable data keys ──────────────────────────────────────────────────
+const ACTIVITIES_KEY = 'tk_activities';
+const QUIZZES_KEY    = 'tk_quizzes';
 
-interface ActivityItem {
-  title: string;
-  ages: string;
-  downloads: number;
-}
-
-interface ActivityCategory {
+export interface ActivityCard {
   id: string;
   icon: string;
   title: string;
   desc: string;
-  color: string;
-  count: number;
-  items: ActivityItem[];
+  tags: string[];      // e.g. ['PDF', 'Ages 4+', 'Free']
+  cta: string;
+  ctaColor: string;
+  active: boolean;
 }
 
-const ACTIVITY_CATEGORIES = [
-  {
-    id: 'coloring',
-    icon: '🎨',
-    title: 'Coloring Pages',
-    desc: 'Beautifully illustrated scenes from Bible stories and saint lives — print and color at home.',
-    color: '#3B82F6',
-    count: 24,
-    items: [
-      { title: "The Good Shepherd", ages: '3-8', downloads: 1240 },
-      { title: "Noah's Ark Adventure", ages: '4-10', downloads: 890 },
-      { title: "Saint Yared's Song", ages: '5-12', downloads: 567 },
-    ],
-  },
-  {
-    id: 'crafts',
-    icon: '✂️',
-    title: 'Crafts & Projects',
-    desc: 'Hands-on projects to bring faith to life — from cross-making to saint crowns.',
-    color: '#F97316',
-    count: 12,
-    items: [
-      { title: "Paper Cross Craft", ages: '5-10', downloads: 432 },
-      { title: "Saint Crown Headband", ages: '4-9', downloads: 318 },
-      { title: "Prayer Beads Bracelet", ages: '7-12', downloads: 275 },
-    ],
-  },
-  {
-    id: 'worksheets',
-    icon: '📝',
-    title: 'Worksheets',
-    desc: 'Learning sheets covering scripture, saints, fasting seasons, and Orthodox traditions.',
-    color: '#7C3AED',
-    count: 18,
-    items: [
-      { title: "The Lord's Prayer Fill-In", ages: '5-8', downloads: 695 },
-      { title: "12 Apostles Name Matching", ages: '6-10', downloads: 512 },
-      { title: "Advent Calendar Activity", ages: '4-12', downloads: 883 },
-    ],
-  },
-  {
-    id: 'puzzles',
-    icon: '🧩',
-    title: 'Puzzles & Games',
-    desc: 'Word searches, crosswords, and memory games with Orthodox Christian themes.',
-    color: '#22C55E',
-    count: 10,
-    items: [
-      { title: "Saints Word Search", ages: '6-12', downloads: 447 },
-      { title: "Scripture Memory Match", ages: '5-10', downloads: 334 },
-      { title: "Fasting Foods Crossword", ages: '8-12', downloads: 221 },
-    ],
-  },
-  {
-    id: 'prayer',
-    icon: '🙏',
-    title: 'Prayer Cards',
-    desc: 'Printable prayer cards and daily devotionals designed for children.',
-    color: '#C9922A',
-    count: 15,
-    items: [
-      { title: "Morning Prayer Card", ages: '3-12', downloads: 1520 },
-      { title: "Bedtime Blessing", ages: '3-8', downloads: 1103 },
-      { title: "Mealtime Grace", ages: '3-12', downloads: 988 },
-    ],
-  },
-  {
-    id: 'music',
-    icon: '🎵',
-    title: 'Songs & Hymns',
-    desc: 'Lyrics sheets and sing-along guides for beloved Orthodox children\'s hymns.',
-    color: '#EF4444',
-    count: 8,
-    items: [
-      { title: "Trisagion for Little Ones", ages: '3-10', downloads: 765 },
-      { title: "Psalm 23 Song Sheet", ages: '5-12', downloads: 543 },
-      { title: "Advent Hymns Booklet", ages: '4-12', downloads: 401 },
-    ],
-  },
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  active: boolean;
+}
+
+const DEFAULT_ACTIVITIES: ActivityCard[] = [
+  { id: '1', icon: '✏️', title: 'Coloring Pages',    desc: 'Printable scenes of Tiggy, the saints, and the great feasts to color in.',                           tags: ['PDF', 'Ages 4+', 'Free'],  cta: 'Download pack →',  ctaColor: '#C0392B', active: true },
+  { id: '2', icon: '🧠', title: 'Saint Quizzes',      desc: 'Fun, gentle quizzes to test what you remember about your favorite saints.',                           tags: ['Interactive', 'Ages 6+'],  cta: 'Try a quiz →',     ctaColor: '#7C3AED', active: true },
+  { id: '3', icon: '🃏', title: 'Memory Cards',        desc: 'Match the icons and learn the feasts with a classic memory game.',                                    tags: ['Printable', 'Ages 5+'],    cta: 'Print cards →',    ctaColor: '#2E8B57', active: true },
+  { id: '4', icon: '🎮', title: 'Simple Games',        desc: 'Easy, screen-safe games — help Tiggy find the lost sheep and more.',                                  tags: ['Online', 'Ages 5+'],       cta: 'Play now →',       ctaColor: '#2C5FA0', active: true },
+  { id: '5', icon: '✂️', title: 'Printable Crafts',   desc: 'Paper icons, feast-day garlands, and prayer-corner decorations to make.',                             tags: ['PDF', 'With grown-up'],    cta: 'Get crafts →',     ctaColor: '#D4691D', active: true },
+  { id: '6', icon: '🎨', title: 'Draw with Tiggy',     desc: 'Follow along, step by step, and learn to draw Tiggy and her friends.',                                tags: ['Video', 'All ages'],       cta: 'Start drawing →',  ctaColor: '#C0392B', active: true },
 ];
 
-function ActivityCard({ cat, onDownload }: { cat: ActivityCategory; onDownload: (title: string) => void }) {
-  const [open, setOpen] = useState(false);
+const DEFAULT_QUIZZES: QuizQuestion[] = [
+  { id: '1', question: 'Which saint is famous for secretly giving gifts to those in need? 🎁',                  options: ['St. Nicholas of Myra', 'St. George', 'St. Mary of Egypt'],     correctIndex: 0, active: true },
+  { id: '2', question: 'Which apostle was the first to be called by Jesus?',                                   options: ['St. Peter', 'St. Andrew', 'St. John'],                          correctIndex: 1, active: true },
+  { id: '3', question: 'How many days did Jonah spend inside the big fish? 🐟',                               options: ['One day', 'Three days', 'Seven days'],                          correctIndex: 1, active: true },
+];
+
+function getActivities(): ActivityCard[] {
+  try {
+    const s = localStorage.getItem(ACTIVITIES_KEY);
+    return s ? JSON.parse(s) : DEFAULT_ACTIVITIES;
+  } catch { return DEFAULT_ACTIVITIES; }
+}
+
+function getQuizzes(): QuizQuestion[] {
+  try {
+    const s = localStorage.getItem(QUIZZES_KEY);
+    return s ? JSON.parse(s) : DEFAULT_QUIZZES;
+  } catch { return DEFAULT_QUIZZES; }
+}
+
+// ── Quiz component ────────────────────────────────────────────────────────────
+function QuizSection() {
+  const questions = getQuizzes().filter(q => q.active);
+  const [qIndex, setQIndex]   = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore]     = useState(0);
+  const [done, setDone]       = useState(false);
+
+  if (questions.length === 0) return null;
+
+  const q = questions[qIndex];
+
+  const handleAnswer = (i: number) => {
+    if (selected !== null) return;
+    setSelected(i);
+    if (i === q.correctIndex) setScore(s => s + 1);
+  };
+
+  const handleNext = () => {
+    if (qIndex + 1 >= questions.length) { setDone(true); return; }
+    setQIndex(qi => qi + 1);
+    setSelected(null);
+  };
+
+  const handleRestart = () => { setQIndex(0); setSelected(null); setScore(0); setDone(false); };
 
   return (
-    <div
-      className="card"
-      style={{
-        padding: '1.5rem',
-        cursor: 'pointer',
-        border: `2px solid ${open ? cat.color : 'transparent'}`,
-        transition: 'border-color 0.2s, transform 0.15s',
-      }}
-      onMouseEnter={e => { if (!open) e.currentTarget.style.transform = 'translateY(-2px)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = ''; }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: open ? '1.25rem' : 0 }}>
-        <div style={{ width: 52, height: 52, borderRadius: '0.875rem', background: `${cat.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
-          {cat.icon}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-            <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1rem', margin: 0, color: 'var(--text-primary)' }}>
-              {cat.title}
-            </h3>
-            <span style={{ background: `${cat.color}18`, color: cat.color, borderRadius: '9999px', padding: '0.1rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {cat.count} items
-            </span>
+    <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
+      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+        <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>TRY IT NOW</p>
+        <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 2.5rem', color: '#1B2A4A' }}>A little saint quiz</h2>
+
+        {done ? (
+          <div className="card" style={{ padding: '2.5rem', textAlign: 'center', background: 'white' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🏆</div>
+            <h3 style={{ color: '#1B2A4A', margin: '0 0 0.5rem', fontSize: '1.5rem' }}>Well done!</h3>
+            <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: '0 0 1.5rem' }}>
+              You got <strong>{score}</strong> out of <strong>{questions.length}</strong> correct!
+            </p>
+            <button onClick={handleRestart} className="btn-maroon">Try again →</button>
           </div>
-          <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, lineHeight: 1.5 }}>
-            {cat.desc}
-          </p>
-        </div>
-      </div>
-
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%', padding: '0.5rem', border: `1.5px solid ${cat.color}`, borderRadius: '0.5rem',
-          background: open ? cat.color : 'transparent', color: open ? 'white' : cat.color,
-          fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s',
-        }}
-      >
-        {open ? '▲ Close' : '▼ Browse Activities'}
-      </button>
-
-      {open && (
-        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-          {cat.items.map(item => (
-            <div key={item.title} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--cream)', borderRadius: '0.75rem', gap: '0.75rem' }}>
-              <div>
-                <p style={{ margin: 0, fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{item.title}</p>
-                <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  Ages {item.ages} · {item.downloads.toLocaleString()} downloads
-                </p>
-              </div>
-              <button
-                onClick={() => onDownload(item.title)}
-                style={{
-                  background: cat.color, color: 'white', border: 'none', borderRadius: '0.5rem',
-                  padding: '0.4rem 0.875rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
-                  flexShrink: 0, whiteSpace: 'nowrap',
-                }}
-              >
-                ↓ Free
-              </button>
+        ) : (
+          <div className="card" style={{ padding: '2rem', background: 'white' }}>
+            <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 1rem' }}>
+              Question {qIndex + 1} of {questions.length}
+            </p>
+            <h3 style={{ color: '#1B2A4A', fontSize: '1.1rem', lineHeight: 1.5, margin: '0 0 1.5rem', fontFamily: 'Nunito, sans-serif', fontWeight: 800 }}>
+              {q.question}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
+              {q.options.map((opt, i) => {
+                let bg = 'white', border = '1.5px solid var(--cream-border)', color = 'var(--text-primary)';
+                if (selected !== null) {
+                  if (i === q.correctIndex) { bg = '#E8F8EC'; border = '2px solid #2E8B57'; color = '#1a5c30'; }
+                  else if (i === selected && i !== q.correctIndex) { bg = '#FEE2E2'; border = '2px solid #C0392B'; color = '#7a1a1a'; }
+                }
+                return (
+                  <button key={i} onClick={() => handleAnswer(i)} style={{
+                    background: bg, border, color, borderRadius: '0.75rem',
+                    padding: '0.875rem 1.25rem', fontWeight: 700, fontSize: '0.95rem',
+                    cursor: selected !== null ? 'default' : 'pointer',
+                    textAlign: 'left', transition: 'all 0.15s', fontFamily: 'Nunito, sans-serif',
+                  }}>
+                    {opt}
+                    {selected !== null && i === q.correctIndex && <span style={{ float: 'right' }}>✓</span>}
+                    {selected !== null && i === selected && i !== q.correctIndex && <span style={{ float: 'right' }}>✗</span>}
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+            {selected !== null && (
+              <button onClick={handleNext} className="btn-maroon" style={{ width: '100%', justifyContent: 'center' }}>
+                {qIndex + 1 >= questions.length ? 'See results →' : 'Next question →'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function Activities() {
-  const [ageFilter, setAgeFilter] = useState('All Ages');
+  const activities = getActivities().filter(a => a.active);
+  const [email, setEmail] = useState('');
+  const { addToast } = useToast();
 
-  const handleDownload = (title: string) => {
-    // In production: link to actual PDF download. For now, show a toast-like alert.
-    alert(`"${title}" would download here. PDFs coming soon!`);
+  const handleSubscribe = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    try {
+      await fetch(`${API}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, source: 'activities' }) });
+    } catch { /* silent */ }
+    addToast('Free printables are on their way!', 'success');
+    setEmail('');
   };
 
   return (
-    <div>
-      {/* Hero */}
-      <section style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '3.5rem 1.25rem', textAlign: 'center', borderBottom: '2px solid var(--cream-border)' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
-            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+    <div style={{ background: 'var(--cream)' }}>
+
+      {/* ── Hero ── */}
+      <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <div className="tiggy-float" style={{ width: 110, height: 110, margin: '0 auto 1.25rem' }}>
+            <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} />
+          </div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: '#C0392B', marginBottom: '1.25rem' }}>
+            🎨 Activities for Kids
           </span>
-        </div>
-        <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
-          Free Activities & Printables
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: '0 0 1.5rem' }}>
-          Coloring pages, worksheets, crafts & more — all 100% free to download
-        </p>
-        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {[['87+', 'Free Downloads'], ['6', 'Categories'], ['All Ages', 'Covered']].map(([v, l]) => (
-            <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{ color: 'var(--maroon)', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.75rem', lineHeight: 1 }}>{v}</div>
-              <div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem' }}>{l}</div>
-            </div>
-          ))}
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+            Let's <span style={{ color: '#C0392B' }}>play</span> and <span style={{ color: '#2E8B57' }}>learn</span> with Tiggy!
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: 0, fontSize: '1.05rem' }}>
+            Free printables, games, and quizzes that make faith joyful. Perfect for rainy days, Sunday school, and quiet afternoons.
+          </p>
         </div>
       </section>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.25rem' }}>
-        {/* Age filters */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-          {AGE_FILTERS.map(f => (
-            <button
-              key={f}
-              onClick={() => setAgeFilter(f)}
-              style={{
-                padding: '0.45rem 1.1rem', borderRadius: '9999px', border: 'none',
-                fontWeight: 800, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s',
-                background: ageFilter === f ? '#7C3AED' : 'white',
-                color: ageFilter === f ? 'white' : 'var(--text-secondary)',
-                boxShadow: ageFilter === f ? '0 2px 8px rgba(124,58,237,0.4)' : '0 1px 4px rgba(0,0,0,0.08)',
-              }}
+      {/* ── Activity cards grid ── */}
+      <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {activities.map(a => (
+              <div key={a.id} className="card" style={{ padding: '1.75rem', background: 'white' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '0.875rem', background: `${a.ctaColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: '1rem' }}>
+                  {a.icon}
+                </div>
+                <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.05rem', margin: '0 0 0.625rem', color: '#1B2A4A' }}>{a.title}</h3>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.65, fontWeight: 600, margin: '0 0 1rem', fontSize: '0.9rem' }}>{a.desc}</p>
+                <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                  {a.tags.map(tag => (
+                    <span key={tag} style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', borderRadius: '9999px', padding: '0.15rem 0.6rem', fontSize: '0.72rem', fontWeight: 700 }}>{tag}</span>
+                  ))}
+                </div>
+                <button
+                  style={{ background: 'none', border: 'none', padding: 0, color: a.ctaColor, fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Nunito, sans-serif' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'}
+                  onClick={() => addToast(`"${a.title}" — coming soon!`, 'info')}
+                >
+                  {a.cta}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Quiz section ── */}
+      <QuizSection />
+
+      {/* ── Draw with Tiggy (dark navy) ── */}
+      <section style={{ background: '#1B2A4A', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>DRAW WITH TIGGY</p>
+            <h2 style={{ color: 'white', fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)', margin: '0 0 1.25rem', lineHeight: 1.2 }}>
+              Grab a pencil — let's draw together!
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.68)', lineHeight: 1.8, fontWeight: 500, margin: '0 0 2rem', fontSize: '0.975rem' }}>
+              In each short video, Tiggy guides you step by step to draw lambs, doves, churches, and your favorite saints. No experience needed — just a smile and some crayons.
+            </p>
+            <a
+              href="https://www.youtube.com/channel/UCY6m20ZtWVjAtbGqcqTYQng"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--gold)', color: 'white', borderRadius: '9999px', padding: '0.75rem 1.75rem', fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none' }}
             >
-              {f}
-            </button>
-          ))}
+              ▶ Watch the drawing series
+            </a>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ maxWidth: 260, margin: '0 auto' }}>
+              <img src="/tiggy.png" alt="Tiggy drawing" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', filter: 'drop-shadow(0 12px 28px rgba(0,0,0,0.4))' }} />
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Activity grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-          {ACTIVITY_CATEGORIES.map(cat => (
-            <ActivityCard key={cat.id} cat={cat} onDownload={handleDownload} />
-          ))}
+      {/* ── Get free printables newsletter ── */}
+      <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <div className="card" style={{ padding: '2.5rem', background: 'white', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ maxWidth: 140, margin: '0 auto' }}>
+                <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', objectFit: 'contain' }} />
+              </div>
+            </div>
+            <div>
+              <h2 style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', margin: '0 0 0.75rem', color: '#1B2A4A' }}>Get free printables every week ✏️</h2>
+              <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.65, margin: '0 0 1.25rem', fontSize: '0.9rem' }}>
+                Join Tiggy's Kingdom Mail and we'll send a fresh coloring page or activity to your inbox each week.
+              </p>
+              <form onSubmit={handleSubscribe} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email address" className="tk-input" required />
+                <button type="submit" className="btn-maroon" style={{ background: '#3A7A30', justifyContent: 'center' }}>Send me printables</button>
+              </form>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Submit CTA */}
-        <div style={{ marginTop: '3rem', background: 'var(--maroon)', borderRadius: '1.5rem', padding: '2.5rem', textAlign: 'center', color: 'white' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✝</div>
-          <h2 style={{ margin: '0 0 0.5rem', fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
-            Teachers & Parents
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, margin: '0 0 1.5rem', maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
-            Contribute your own activities to Tiggy's Kingdom and help families around the world grow in faith.
-          </p>
-          <a href="mailto:hello@tiggyskingdom.com" style={{ background: 'var(--gold)', color: 'white', borderRadius: '9999px', padding: '0.75rem 2rem', fontWeight: 800, fontSize: '1rem', display: 'inline-block' }}>
-            Submit an Activity
-          </a>
-        </div>
-      </div>
     </div>
   );
 }

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { API } from '../lib/api';
 import { STATUS_COLORS } from '../lib/constants';
+import { type ActivityCard, type QuizQuestion } from './Activities';
+import { type ParentGuide } from './Subscribe';
+import { type Prayer } from './Calendar';
 
 interface AdminProduct {
   id: number;
@@ -953,6 +956,338 @@ function ActivityTab() {
   );
 }
 
+// ── Content management helpers ───────────────────────────────────────────────
+type ContentItem = { id: string; active?: boolean } & (ActivityCard | QuizQuestion | ParentGuide | Prayer);
+
+function useLocalStore<T extends { id: string; active?: boolean }>(key: string, defaults: T[]): [T[], (items: T[]) => void] {
+  const get = (): T[] => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : defaults; } catch { return defaults; } };
+  const [items, setItems] = useState<T[]>(get);
+  const save = (next: T[]) => { localStorage.setItem(key, JSON.stringify(next)); setItems(next); };
+  return [items, save];
+}
+
+// Import default arrays from the public pages for seeding
+const ACTIVITY_DEFAULTS: ActivityCard[] = [
+  { id: '1', icon: '✏️', title: 'Coloring Pages',   desc: 'Printable scenes of Tiggy, the saints, and the great feasts to color in.',       tags: ['PDF','Ages 4+','Free'], cta: 'Download pack →', ctaColor: '#C0392B', active: true },
+  { id: '2', icon: '🧠', title: 'Saint Quizzes',     desc: 'Fun, gentle quizzes to test what you remember about your favorite saints.',       tags: ['Interactive','Ages 6+'], cta: 'Try a quiz →', ctaColor: '#7C3AED', active: true },
+  { id: '3', icon: '🃏', title: 'Memory Cards',      desc: 'Match the icons and learn the feasts with a classic memory game.',                tags: ['Printable','Ages 5+'], cta: 'Print cards →', ctaColor: '#2E8B57', active: true },
+  { id: '4', icon: '🎮', title: 'Simple Games',      desc: 'Easy, screen-safe games — help Tiggy find the lost sheep and more.',              tags: ['Online','Ages 5+'], cta: 'Play now →', ctaColor: '#2C5FA0', active: true },
+  { id: '5', icon: '✂️', title: 'Printable Crafts',  desc: 'Paper icons, feast-day garlands, and prayer-corner decorations to make.',        tags: ['PDF','With grown-up'], cta: 'Get crafts →', ctaColor: '#D4691D', active: true },
+  { id: '6', icon: '🎨', title: 'Draw with Tiggy',   desc: 'Follow along, step by step, and learn to draw Tiggy and her friends.',           tags: ['Video','All ages'], cta: 'Start drawing →', ctaColor: '#C0392B', active: true },
+];
+const QUIZ_DEFAULTS: QuizQuestion[] = [
+  { id: '1', question: 'Which saint is famous for secretly giving gifts to those in need? 🎁', options: ['St. Nicholas of Myra','St. George','St. Mary of Egypt'], correctIndex: 0, active: true },
+  { id: '2', question: 'Which apostle was the first to be called by Jesus?', options: ['St. Peter','St. Andrew','St. John'], correctIndex: 1, active: true },
+  { id: '3', question: 'How many days did Jonah spend inside the big fish? 🐟', options: ['One day','Three days','Seven days'], correctIndex: 1, active: true },
+];
+const PRAYER_DEFAULTS: Prayer[] = [
+  { id: '1', icon: '🌅', title: 'Morning Prayer',       borderColor: '#F97316', text: "Thank You, God, for this new day. Keep me kind in work and play. Help me love and help me share, and feel You with me everywhere.", note: 'A gentle way to begin the morning with gratitude.' },
+  { id: '2', icon: '🌙', title: 'Evening Prayer',        borderColor: '#7C3AED', text: "Thank You, God, for all today — the friends, the food, the time to play. Watch me as I close my eyes, until the morning sun will rise.", note: 'Perfect for the end of the bedtime routine.' },
+  { id: '3', icon: '🍽',  title: 'Before Meals',          borderColor: '#22A05A', text: "Bless this food we're going to eat, and bless the hands that made our treat. Thank You, God, for all we share. Amen.", note: 'A short blessing the whole family can say together.' },
+  { id: '4', icon: '👼', title: 'To My Guardian Angel',  borderColor: '#3B82F6', text: "Angel sent to be my friend, stay beside me to the end. Guide my steps and keep me near to all that's good and all that's dear.", note: 'Help little ones feel safe and watched over.' },
+];
+const GUIDE_DEFAULTS: ParentGuide[] = [
+  { id: '1', icon: '📋', title: 'Parent Guides',      desc: 'One-page guides for each episode with the lesson, discussion questions, and a simple follow-up activity.',   cta: 'Download guides →', type: 'parent',  active: true },
+  { id: '2', icon: '🍎', title: 'Teacher Resources',  desc: 'Lesson plans, printable worksheets, and classroom-ready slides for Sunday school and church schools.',       cta: 'Browse lessons →',  type: 'teacher', active: true },
+  { id: '3', icon: '📅', title: 'Feast Day Calendar', desc: 'A year-round calendar of the great feasts and saints, with reminders you can follow as a family or class.',  cta: 'Open calendar →',   type: 'feast',   active: true },
+];
+
+// ── Generic content manager component ─────────────────────────────────────────
+function ContentManager<T extends { id: string; active?: boolean }>({ storageKey, defaults, fields, renderPreview, addLabel }: {
+  storageKey: string;
+  defaults: T[];
+  fields: Array<{ key: keyof T; label: string; type?: 'text' | 'textarea' | 'color' | 'select' | 'toggle'; options?: string[] }>;
+  renderPreview: (item: T) => string;
+  addLabel: string;
+}) {
+  const [items, setItems] = useLocalStore<T>(storageKey, defaults);
+  const [editing, setEditing] = useState<T | null>(null);
+  const [form, setForm] = useState<Partial<T>>({});
+
+  const startNew = () => {
+    const blank: Partial<T> = { id: Date.now().toString(), active: true } as Partial<T>;
+    fields.forEach(f => { if (!(f.key in blank)) blank[f.key] = (f.type === 'toggle' ? true : '') as T[keyof T]; });
+    setForm(blank);
+    setEditing(blank as T);
+  };
+
+  const startEdit = (item: T) => { setEditing(item); setForm({ ...item }); };
+  const cancelEdit = () => { setEditing(null); setForm({}); };
+
+  const saveEdit = () => {
+    const next = editing?.id && items.find(i => i.id === editing.id)
+      ? items.map(i => i.id === editing!.id ? { ...i, ...form } as T : i)
+      : [...items, { ...form } as T];
+    setItems(next);
+    cancelEdit();
+  };
+
+  const toggleActive = (id: string) => setItems(items.map(i => i.id === id ? { ...i, active: !i.active } as T : i));
+  const deleteItem   = (id: string) => setItems(items.filter(i => i.id !== id));
+
+  const rowStyle: CSSProperties = { padding: '0.875rem 1rem', borderBottom: '1px solid var(--cream)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{items.length} items</h3>
+        <button onClick={startNew} style={{ ...btnBase, background: 'var(--maroon)', color: 'white', border: 'none', padding: '0.4rem 1rem' }}>+ {addLabel}</button>
+      </div>
+
+      {editing && (
+        <div style={{ background: 'var(--gold-pale)', border: '1.5px solid var(--gold)', borderRadius: '0.875rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <h4 style={{ margin: '0 0 1rem', color: 'var(--maroon)' }}>{items.find(i => i.id === editing.id) ? 'Edit' : 'New'} item</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.875rem' }}>
+            {fields.map(f => (
+              <div key={String(f.key)}>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem', textTransform: 'uppercase' }}>{f.label}</label>
+                {f.type === 'toggle' ? (
+                  <input type="checkbox" checked={!!form[f.key]} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.checked }))} style={{ width: 18, height: 18 }} />
+                ) : f.type === 'textarea' ? (
+                  <textarea value={String(form[f.key] ?? '')} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))} rows={3} style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem', resize: 'vertical' }} />
+                ) : f.type === 'select' ? (
+                  <select value={String(form[f.key] ?? '')} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
+                    {f.options?.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <input type={f.type || 'text'} value={String(form[f.key] ?? '')} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontSize: '0.875rem' }} />
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <button onClick={saveEdit} style={{ ...btnBase, background: 'var(--maroon)', color: 'white', border: 'none' }}>Save</button>
+            <button onClick={cancelEdit} style={{ ...btnBase }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
+        {items.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>No items yet.</p>}
+        {items.map(item => (
+          <div key={item.id} style={{ ...rowStyle, opacity: item.active ? 1 : 0.5 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{renderPreview(item)}</p>
+              <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{item.active ? 'Active' : 'Hidden'}</p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+              <button onClick={() => toggleActive(item.id)} style={{ ...btnBase, background: item.active ? '#FEF3C7' : '#DCFCE7', color: item.active ? '#C9922A' : '#166534' }}>{item.active ? 'Hide' : 'Show'}</button>
+              <button onClick={() => startEdit(item)} style={{ ...btnBase }}>Edit</button>
+              <ConfirmBtn label="Delete" onConfirm={() => deleteItem(item.id)} btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ActivitiesTab() {
+  return (
+    <div>
+      <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Activities for Kids</h2>
+      <ContentManager<ActivityCard>
+        storageKey="tk_activities"
+        defaults={ACTIVITY_DEFAULTS}
+        addLabel="Add Activity"
+        renderPreview={a => `${a.icon} ${a.title}`}
+        fields={[
+          { key: 'icon',     label: 'Icon (emoji)' },
+          { key: 'title',    label: 'Title' },
+          { key: 'desc',     label: 'Description', type: 'textarea' },
+          { key: 'cta',      label: 'CTA text' },
+          { key: 'ctaColor', label: 'CTA color', type: 'color' },
+          { key: 'active',   label: 'Active', type: 'toggle' },
+        ]}
+      />
+    </div>
+  );
+}
+
+function QuizzesTab() {
+  return (
+    <div>
+      <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Quiz Questions</h2>
+      <ContentManager<QuizQuestion>
+        storageKey="tk_quizzes"
+        defaults={QUIZ_DEFAULTS}
+        addLabel="Add Question"
+        renderPreview={q => q.question.slice(0, 80)}
+        fields={[
+          { key: 'question',     label: 'Question', type: 'textarea' },
+          { key: 'active',       label: 'Active', type: 'toggle' },
+        ]}
+      />
+      <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+        Note: To edit answer options and correct answer, use the Edit form. Options are comma-separated in the &quot;options&quot; field when editing raw JSON is needed — this editor keeps it simple.
+      </p>
+    </div>
+  );
+}
+
+function PrayersTab() {
+  return (
+    <div>
+      <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Prayer Cards</h2>
+      <ContentManager<Prayer>
+        storageKey="tk_prayers"
+        defaults={PRAYER_DEFAULTS}
+        addLabel="Add Prayer"
+        renderPreview={p => `${p.icon} ${p.title}`}
+        fields={[
+          { key: 'icon',        label: 'Icon (emoji)' },
+          { key: 'title',       label: 'Title' },
+          { key: 'text',        label: 'Prayer text', type: 'textarea' },
+          { key: 'note',        label: 'Note / context', type: 'textarea' },
+          { key: 'borderColor', label: 'Border color', type: 'color' },
+          { key: 'active',      label: 'Active', type: 'toggle' },
+        ]}
+      />
+    </div>
+  );
+}
+
+const GUIDE_FILES_KEY = 'tk_guide_files';
+
+type GuideFilesMap = Record<string, { url: string; name: string; filename: string }>;
+
+function getGuideFiles(): GuideFilesMap {
+  try { return JSON.parse(localStorage.getItem(GUIDE_FILES_KEY) || '{}'); } catch { return {}; }
+}
+
+function GuidesTab() {
+  const [guideFiles, setGuideFiles] = useState<GuideFilesMap>(getGuideFiles);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const currentGuides = (): ParentGuide[] => {
+    try { const s = localStorage.getItem('tk_parent_guides'); return s ? JSON.parse(s) : GUIDE_DEFAULTS; }
+    catch { return GUIDE_DEFAULTS; }
+  };
+
+  const saveFiles = (next: GuideFilesMap) => {
+    localStorage.setItem(GUIDE_FILES_KEY, JSON.stringify(next));
+    setGuideFiles({ ...next });
+  };
+
+  const handleUpload = async (guideId: string, file: File) => {
+    setUploading(guideId);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/admin/guides/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error || 'Upload failed'); return; }
+      saveFiles({ ...guideFiles, [guideId]: { url: data.url, name: data.name, filename: data.filename } });
+    } catch { setUploadError('Network error — could not reach the server'); }
+    finally { setUploading(null); }
+  };
+
+  const handleRemove = async (guideId: string) => {
+    const fileInfo = guideFiles[guideId];
+    if (!fileInfo) return;
+    try {
+      await fetch(`${API}/api/admin/guides/file`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fileInfo.filename }),
+      });
+    } catch { /* best effort */ }
+    const next = { ...guideFiles };
+    delete next[guideId];
+    saveFiles(next);
+  };
+
+  const rowStyle: CSSProperties = { padding: '0.875rem 1rem', borderBottom: '1px solid var(--cream)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' };
+
+  return (
+    <div>
+      <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Parent &amp; Teacher Guides</h2>
+      <ContentManager<ParentGuide>
+        storageKey="tk_parent_guides"
+        defaults={GUIDE_DEFAULTS}
+        addLabel="Add Guide"
+        renderPreview={g => `${g.icon} ${g.title}`}
+        fields={[
+          { key: 'icon',   label: 'Icon (emoji)' },
+          { key: 'title',  label: 'Title' },
+          { key: 'desc',   label: 'Description', type: 'textarea' },
+          { key: 'cta',    label: 'CTA text' },
+          { key: 'type',   label: 'Type', type: 'select', options: ['parent', 'teacher', 'feast'] },
+          { key: 'active', label: 'Active', type: 'toggle' },
+        ]}
+      />
+
+      {/* ── Downloadable files ──────────────────────────────────────────── */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Downloadable Files</h3>
+        <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+          Attach a PDF or document to each guide. Users will see a Download button on the Parents page.
+        </p>
+
+        {uploadError && (
+          <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700, marginBottom: '1rem' }}>
+            ✕ {uploadError}
+          </div>
+        )}
+
+        <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
+          {currentGuides().map(guide => {
+            const file = guideFiles[guide.id];
+            return (
+              <div key={guide.id} style={rowStyle}>
+                <input
+                  type="file"
+                  ref={el => { fileRefs.current[guide.id] = el; }}
+                  style={{ display: 'none' }}
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                  onChange={e => { if (e.target.files?.[0]) handleUpload(guide.id, e.target.files[0]); e.target.value = ''; }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    {guide.icon} {guide.title}
+                    {!guide.active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>(hidden)</span>}
+                  </p>
+                  {file ? (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#22A05A', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      📎 {file.name}
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2C5FA0', textDecoration: 'none', fontWeight: 700 }}>preview ↗</a>
+                    </p>
+                  ) : (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>No file attached</p>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+                  <button
+                    onClick={() => fileRefs.current[guide.id]?.click()}
+                    disabled={uploading === guide.id}
+                    style={{ ...btnBase, background: file ? '#EFF6FF' : 'var(--maroon)', color: file ? '#2C5FA0' : 'white', border: file ? '1.5px solid #BFDBFE' : 'none', opacity: uploading === guide.id ? 0.6 : 1 }}
+                  >
+                    {uploading === guide.id ? '⏳ Uploading…' : file ? '↑ Replace' : '↑ Upload file'}
+                  </button>
+                  {file && (
+                    <ConfirmBtn
+                      label="Remove"
+                      onConfirm={() => handleRemove(guide.id)}
+                      btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Admin ────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'overview',    label: 'Overview',    icon: '📊', key: 'o' },
@@ -961,7 +1296,11 @@ const TABS = [
   { id: 'subscribers', label: 'Subscribers', icon: '✉️', key: 's' },
   { id: 'users',       label: 'Users',       icon: '👥', key: 'u' },
   { id: 'episodes',    label: 'Episodes',    icon: '▶',  key: 'e' },
-  { id: 'activity',    label: 'Activity',    icon: '📋', key: 'l' },
+  { id: 'activities',  label: 'Activities',  icon: '🎨', key: 'a' },
+  { id: 'quizzes',     label: 'Quizzes',     icon: '🧠', key: 'q' },
+  { id: 'prayers',     label: 'Prayers',     icon: '🙏', key: 'y' },
+  { id: 'guides',      label: 'Guides',      icon: '📋', key: 'g' },
+  { id: 'activity',    label: 'Audit Log',   icon: '📈', key: 'l' },
 ];
 
 export default function Admin() {
@@ -1261,6 +1600,10 @@ export default function Admin() {
           {tab === 'subscribers' && <SubscribersTab toast={addToast} />}
           {tab === 'users'       && <UsersTab />}
           {tab === 'episodes'    && <EpisodesTab    toast={addToast} />}
+          {tab === 'activities'  && <ActivitiesTab />}
+          {tab === 'quizzes'     && <QuizzesTab />}
+          {tab === 'prayers'     && <PrayersTab />}
+          {tab === 'guides'      && <GuidesTab />}
           {tab === 'activity'    && <ActivityTab />}
         </main>
       </div>

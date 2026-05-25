@@ -2,6 +2,7 @@ import express, { type Request, type Response, type NextFunction } from "express
 import Stripe from "stripe";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import multer from "multer";
 import nodemailer from "nodemailer";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -580,6 +581,36 @@ app.delete("/api/admin/episodes/:id", requireAdmin, async (req: Request, res: Re
     .eq("id", Number(req.params.id));
   if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
   res.json({ success: true });
+});
+
+// ── Guide file uploads ────────────────────────────────────────────────────────
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const GUIDES_BUCKET = "guide-files";
+
+const ensureGuidesBucket = async () => {
+  const { error } = await supabase.storage.createBucket(GUIDES_BUCKET, { public: true });
+  if (error && !error.message.includes("already exists")) console.warn("Bucket create:", error.message);
+};
+ensureGuidesBucket();
+
+app.post("/api/admin/guides/upload", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
+  if (!req.file) return res.status(400).json({ error: "No file provided" });
+  const ext = (req.file.originalname.split(".").pop() || "bin").toLowerCase();
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage
+    .from(GUIDES_BUCKET)
+    .upload(filename, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
+  if (error) return res.status(500).json({ error: error.message });
+  const { data: { publicUrl } } = supabase.storage.from(GUIDES_BUCKET).getPublicUrl(filename);
+  res.json({ url: publicUrl, name: req.file.originalname, filename });
+});
+
+app.delete("/api/admin/guides/file", requireAdmin, async (req: Request, res: Response) => {
+  const { filename } = req.body as { filename?: string };
+  if (!filename) return res.status(400).json({ error: "filename required" });
+  const { error } = await supabase.storage.from(GUIDES_BUCKET).remove([filename]);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
 });
 
 // ── Health ────────────────────────────────────────────────────────────────────

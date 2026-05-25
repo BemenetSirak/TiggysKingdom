@@ -498,48 +498,52 @@ export default function Lessons() {
 
   return (
     <div>
-      {/* ── Header ── */}
-      <section style={{ background: 'linear-gradient(135deg, var(--cream-dark) 0%, var(--gold-pale) 100%)', padding: '3.5rem 1.25rem', textAlign: 'center', borderBottom: '2px solid var(--cream-border)' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
-            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
+      {/* ── Hero ── */}
+      <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <div className="tiggy-float" style={{ width: 110, height: 110, margin: '0 auto 1.25rem' }}>
+            <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} />
+          </div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+            📺 The Watch Library
           </span>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+            Stories to <span style={{ color: '#D4691D' }}>play</span> &amp; watch together
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: '0 auto', maxWidth: 520, lineHeight: 1.7, fontSize: '1.05rem' }}>
+            Every film is hand-crafted, faithful to the tradition, and gentle enough for the youngest souls. A new story every Sunday.
+          </p>
         </div>
-        <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
-          Animated Adventures
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: 0 }}>
-          New episodes every week — faith comes alive for ages 4-12
-        </p>
       </section>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1.25rem' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2.5rem 1.25rem' }}>
 
         {/* ── Filter tabs ── */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-          {(['all', 'episodes', 'shorts'] as Filter[]).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding: '0.45rem 1.1rem',
-                borderRadius: '9999px',
-                border: f === 'shorts' && filter === f ? '2px solid #EF4444' : '2px solid transparent',
-                fontWeight: 800,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                background: filter === f
-                  ? (f === 'shorts' ? '#EF4444' : 'var(--maroon)')
-                  : 'var(--cream-dark)',
-                color: filter === f ? 'white' : 'var(--text-secondary)',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                transition: 'all 0.2s',
-              }}
-            >
-              {tabLabel(f)}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2.5rem', justifyContent: 'center' }}>
+          {(['all', 'episodes', 'shorts'] as Filter[]).map((f, i) => {
+            const labels = ['All Stories', 'Episodes', 'Shorts'];
+            const active = filter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                style={{
+                  padding: '0.5rem 1.25rem',
+                  borderRadius: '9999px',
+                  border: '2px solid transparent',
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  background: active ? '#1B2A4A' : 'white',
+                  color: active ? 'white' : 'var(--text-secondary)',
+                  boxShadow: active ? '0 2px 8px rgba(27,42,74,0.25)' : '0 1px 4px rgba(0,0,0,0.08)',
+                  transition: 'all 0.18s',
+                }}
+              >
+                {labels[i]}{!loading ? ` (${f === 'all' ? allVideos.length : f === 'episodes' ? episodes.length : shorts.length}${nextPageRef.current && f !== 'shorts' ? '+' : ''})` : ''}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Error ── */}
@@ -575,7 +579,7 @@ export default function Lessons() {
         {/* ── Episode / All grid (16:9) ── */}
         {!loading && filter !== 'shorts' && visibleVideos.length > 0 && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
               {videosWithBadge.map((video, i) => (
                 <EpisodeCard
                   key={video.id}
@@ -590,12 +594,7 @@ export default function Lessons() {
             </div>
             {hasMore && (
               <div style={{ textAlign: 'center' }}>
-                <button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="btn-maroon"
-                  style={{ opacity: loadingMore ? 0.7 : 1 }}
-                >
+                <button onClick={handleLoadMore} disabled={loadingMore} className="btn-maroon" style={{ opacity: loadingMore ? 0.7 : 1 }}>
                   {loadingMore ? 'Loading…' : 'Load More'}
                 </button>
               </div>
@@ -611,6 +610,28 @@ export default function Lessons() {
         )}
 
       </div>
+
+      {/* ── Never miss a Sunday story CTA ── */}
+      <section style={{ padding: '2rem 1.25rem 4rem' }}>
+        <div style={{ maxWidth: 680, margin: '0 auto', background: '#1B2A4A', borderRadius: '1.5rem', padding: '3rem 2.5rem', textAlign: 'center' }}>
+          <h2 style={{ color: 'white', fontSize: 'clamp(1.5rem, 3vw, 2rem)', margin: '0 0 0.75rem' }}>
+            Never miss a Sunday story 🔔
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 600, margin: '0 0 1.75rem', lineHeight: 1.6 }}>
+            Subscribe on YouTube to get every new Tiggy episode the moment it premieres.
+          </p>
+          <a
+            href={`https://www.youtube.com/channel/${CHANNEL_ID}?sub_confirmation=1`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', background: '#EF4444', color: 'white', borderRadius: '9999px', padding: '0.75rem 2rem', fontWeight: 800, fontSize: '1rem', textDecoration: 'none', transition: 'background 0.15s' }}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = '#DC2626'}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = '#EF4444'}
+          >
+            ▶ Subscribe on YouTube
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

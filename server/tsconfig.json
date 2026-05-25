@@ -11,6 +11,6 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["index.ts"],
+  "include": ["index.ts", "supabase.ts"],
   "exclude": ["node_modules", "dist"]
 }

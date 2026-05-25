@@ -1,16 +1,13 @@
-import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import type { VideoProgress } from '../context/AuthContext';
 import EmptyState from '../components/EmptyState';
-
 import { API } from '../lib/api';
 
 const YT_API_KEY  = import.meta.env.VITE_YOUTUBE_API_KEY || '';
 const CHANNEL_ID  = 'UCY6m20ZtWVjAtbGqcqTYQng';
-
-type VideoFilter = 'all' | 'episodes' | 'shorts';
 
 interface YTVideo { id: string; title: string; isShort: boolean; }
 
@@ -20,44 +17,30 @@ function parseDuration(iso: string): number {
   return (parseInt(m[1] || '0') * 3600) + (parseInt(m[2] || '0') * 60) + parseInt(m[3] || '0');
 }
 
-const ADVENTURE_CARDS = [
-  { title: 'Animated Adventures', desc: 'Watch Tiggy explore ancient churches, learn about saints, and discover the beauty of Orthodox faith.', cta: 'Watch Now →', to: '/episodes', bg: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)', icon: '▶', iconBg: '#F97316' },
-  { title: 'Sacred Stories', desc: 'Beautiful storybooks about Jesus, the saints, and the wonders of faith — crafted for ages 4-12.', cta: 'Browse Books →', to: '/shop', bg: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', icon: '📖', iconBg: '#C9922A' },
-  { title: 'Creative Corner', desc: 'Coloring pages, crafts, and activities that bring the faith to life through play and creativity.', cta: 'Start Creating →', to: '/activities', bg: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', icon: '✏️', iconBg: '#A855F7' },
-];
-
-
 const TESTIMONIALS = [
-  { quote: "Tiggy has transformed our family prayer time! My children actually ask to watch episodes and then we discuss the saints together. It's brought our Orthodox faith to life in a way I never imagined possible.", name: 'Maria S.', role: 'Mother of 3, Chicago' },
-  { quote: "As a Sunday school teacher, Tiggy's Kingdom is a gift. The content is theologically sound, beautifully illustrated, and the children absolutely love Tiggy. I recommend it to every Orthodox family.", name: 'Father Nicholas', role: 'Sunday School Teacher, New York' },
-  { quote: "My 5-year-old asked to read the Saint Yared book every night for a month. Seeing her fall in love with our Ethiopian Orthodox heritage through Tiggy is a blessing beyond words.", name: 'Sara T.', role: 'Mother of 2, Atlanta' },
+  { quote: "My kids ask for 'one more Tiggy story' every single night. It's the best part of our bedtime routine.", name: 'Maria K.', role: 'Mother of three' },
+  { quote: "Finally, beautiful Orthodox content I can trust. The animation is gorgeous and the stories are faithful and gentle.", name: 'Fr. Andrew', role: 'Parish priest' },
+  { quote: "I bought the treasury for my goddaughter's name day. The illustrations are stunning — a true heirloom gift.", name: 'Claire P.', role: 'Godmother' },
 ];
 
-const EP_COLORS = ['#3B82F6', '#F97316', '#7C3AED', '#22C55E', '#EF4444', '#C9922A'];
+const EP_COLORS = ['#3B82F6', '#22A05A', '#DC2626', '#8B5CF6', '#F97316', '#C9922A'];
 
 function fmtTime(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s) % 60).padStart(2, '0')}`;
 }
 
-function StarRating({ count = 5 }: { count?: number }) {
-  return <span className="stars">{'★'.repeat(count)}</span>;
-}
-
 export default function Home() {
-  const [testimonialIndex, setTestimonialIndex] = useState(0);
-  const [testimonialPaused, setTestimonialPaused] = useState(false);
-  const [email, setEmail] = useState('');
-  const [ytVideos, setYtVideos]     = useState<YTVideo[]>([]);
-  const [ytLoading, setYtLoading]   = useState(true);
-  const [videoFilter, setVideoFilter] = useState<VideoFilter>('all');
+  const [email, setEmail]             = useState('');
+  const [ytVideos, setYtVideos]       = useState<YTVideo[]>([]);
+  const [ytLoading, setYtLoading]     = useState(true);
   const [continueWatching, setContinueWatching] = useState<VideoProgress | null>(null);
-  const { addToast } = useToast();
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const { addToast }       = useToast();
   const { user, getWatchHistory } = useAuth();
 
-  // Fetch latest videos from YouTube channel
   useEffect(() => {
     if (!YT_API_KEY) { setYtLoading(false); return; }
-    fetch(`https://www.googleapis.com/youtube/v3/search?key=${YT_API_KEY}&channelId=${CHANNEL_ID}&part=id&type=video&order=date&maxResults=10`)
+    fetch(`https://www.googleapis.com/youtube/v3/search?key=${YT_API_KEY}&channelId=${CHANNEL_ID}&part=id&type=video&order=viewCount&maxResults=15`)
       .then(r => r.json())
       .then(async data => {
         if (data.error || !data.items?.length) return;
@@ -80,17 +63,9 @@ export default function Home() {
       .finally(() => setYtLoading(false));
   }, []);
 
-  // Auto-rotate testimonials every 5s (pause on hover)
-  useEffect(() => {
-    if (testimonialPaused) return;
-    const id = setInterval(() => setTestimonialIndex(i => (i + 1) % TESTIMONIALS.length), 5000);
-    return () => clearInterval(id);
-  }, [testimonialPaused]);
-
-  // Continue watching — find most recent in-progress video
   useEffect(() => {
     if (!user?.id || user.id === 'guest') { setContinueWatching(null); return; }
-    const history = getWatchHistory(user.id);
+    const history    = getWatchHistory(user.id);
     const inProgress = history.find(h => h.timestamp > 30 && h.duration > 0 && (h.timestamp / h.duration) < 0.9) ?? null;
     setContinueWatching(prev => prev?.videoId === inProgress?.videoId ? prev : inProgress);
   }, [user, getWatchHistory]);
@@ -99,23 +74,16 @@ export default function Home() {
     e.preventDefault();
     if (!email) return;
     try {
-      const res = await fetch(`${API}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, source: 'homepage' }) });
+      const res  = await fetch(`${API}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, source: 'homepage' }) });
       const data = await res.json();
-      addToast(data.message || "You've joined Tiggy's Flock! Check your inbox.", 'success');
+      addToast(data.message || "You've joined Tiggy's Kingdom Mail! Check your inbox.", 'success');
     } catch {
-      addToast("You've joined Tiggy's Flock! Check your inbox.", 'success');
+      addToast("You've joined Tiggy's Kingdom Mail! Check your inbox.", 'success');
     }
     setEmail('');
   };
 
-  const filteredVideos = videoFilter === 'all'
-    ? ytVideos
-    : videoFilter === 'episodes'
-      ? ytVideos.filter(v => !v.isShort)
-      : ytVideos.filter(v => v.isShort);
-  const displayVideos = filteredVideos.slice(0, videoFilter === 'shorts' ? 6 : 4);
-
-  const t = TESTIMONIALS[testimonialIndex];
+  const displayVideos = ytVideos.filter(v => !v.isShort).slice(0, 3);
 
   return (
     <div>
@@ -126,58 +94,79 @@ export default function Home() {
             <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>▶</span>
             <div>
               <p style={{ margin: 0, fontWeight: 800, fontSize: '0.9rem' }}>Continue watching</p>
-              <p style={{ margin: 0, fontSize: '0.78rem', opacity: 0.8 }}>
-                {continueWatching.title} — {fmtTime(continueWatching.timestamp)} / {fmtTime(continueWatching.duration)}
-              </p>
+              <p style={{ margin: 0, fontSize: '0.78rem', opacity: 0.8 }}>{continueWatching.title} — {fmtTime(continueWatching.timestamp)} / {fmtTime(continueWatching.duration)}</p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <Link
-              to="/episodes"
-              state={{ resumeVideoId: continueWatching.videoId }}
-              className="btn-gold"
-              style={{ padding: '0.4rem 1.1rem', fontSize: '0.85rem' }}
-            >Resume →</Link>
+            <Link to="/episodes" state={{ resumeVideoId: continueWatching.videoId }} className="btn-gold" style={{ padding: '0.4rem 1.1rem', fontSize: '0.85rem' }}>Resume →</Link>
             <button onClick={() => setContinueWatching(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.25rem 0.5rem', lineHeight: 1 }}>✕</button>
           </div>
         </div>
       )}
 
       {/* ===== HERO ===== */}
-      <section style={{ background: 'linear-gradient(180deg, #B8E8FF 0%, #FFF5CC 50%, #D4F5D4 100%)', padding: '4rem 1.25rem 3rem', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        {['❤️', '✦', '✝', '⭐', '❤️', '✦', '✝', '💛'].map((d, i) => (
-          <span key={i} style={{ position: 'absolute', fontSize: ['1rem','0.75rem','1.25rem','0.9rem','1.1rem','0.8rem','1rem','0.7rem'][i], top: ['15%','25%','40%','10%','60%','70%','20%','55%'][i], left: ['5%','12%','8%','88%','93%','85%','78%','3%'][i], opacity: 0.6 }}>{d}</span>
-        ))}
-        <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, color: 'var(--maroon)', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Welcome to</p>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 7vw, 4.5rem)', color: '#1E6CB8', margin: '0 0 0.5rem', lineHeight: 1.1, fontWeight: 700 }}>Tiggy's Kingdom</h1>
-        <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: 'clamp(1rem, 3vw, 1.35rem)', color: 'var(--purple)', margin: '0 0 2rem' }}>Where Faith, Wonder, and Learning Dance Together</p>
-        <div style={{ maxWidth: 500, margin: '0 auto 2.5rem', background: 'rgba(255,255,255,0.35)', borderRadius: '2rem', padding: '2rem 1rem', backdropFilter: 'blur(4px)' }}>
-          <div className="tiggy-float" style={{ width: 140, height: 140, borderRadius: '50%', overflow: 'hidden', margin: '0 auto', border: '4px solid var(--maroon)', boxShadow: '0 8px 32px rgba(107,32,32,0.25)' }}>
-            <img src="/tiggy.png" alt="Tiggy the Lamb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem 4rem' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div>
+            <span style={{ display: 'inline-block', background: 'var(--gold-pale)', color: 'var(--gold-dark)', fontWeight: 800, fontSize: '0.8rem', padding: '0.35rem 1rem', borderRadius: '9999px', marginBottom: '1.5rem', letterSpacing: '0.03em' }}>
+              Orthodox stories for ages 5–12
+            </span>
+            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', lineHeight: 1.05, margin: '0 0 1rem', color: 'var(--text-primary)', fontWeight: 700 }}>
+              Meet <span style={{ color: '#D4691D' }}>Tiggy</span>, the<br />little lamb who<br />loves <span style={{ color: '#3A7A30' }}>God</span>!
+            </h1>
+            <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.1rem', color: 'var(--text-secondary)', margin: '0 0 1.25rem' }}>
+              Play, Learn &amp; Grow with God ✦
+            </p>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0 0 2.25rem', maxWidth: 480, fontSize: '1.05rem' }}>
+              Join Tiggy on joyful, beautifully animated adventures through the saints, the feasts, and the wonders of the faith — gentle stories the whole family can treasure together.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <Link to="/episodes" className="btn-maroon">▶ Watch the Stories</Link>
+              <Link to="/shop" className="btn-outline-maroon">Browse the Bookshop</Link>
+            </div>
           </div>
-          <p style={{ color: 'var(--maroon)', fontWeight: 700, margin: '0.75rem 0 0' }}>Tiggy the Lamb &amp; Friends</p>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
-          <Link to="/episodes" className="btn-purple" style={{ fontSize: '1rem' }}>▶ Watch Episodes</Link>
-          <Link to="/shop" className="btn-gold" style={{ fontSize: '1rem' }}>📖 Explore Books</Link>
-          <Link to="/activities" className="btn-purple" style={{ fontSize: '1rem', background: 'var(--purple-light)' }}>✏️ Free Activities</Link>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="tiggy-float" style={{ maxWidth: 420, width: '100%' }}>
+              <img
+                src="/tiggy.png"
+                alt="Tiggy the Lamb"
+                style={{ width: '100%', maxHeight: 480, objectFit: 'contain', filter: 'drop-shadow(0 24px 48px rgba(107,32,32,0.18))' }}
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ===== START YOUR ADVENTURE ===== */}
-      <section style={{ background: 'var(--gold-pale)', padding: '4rem 1.25rem' }}>
+      {/* ===== THREE JOYFUL WAYS ===== */}
+      <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', color: 'var(--gold)', fontSize: '1.25rem', marginBottom: '0.25rem' }}>✦ &nbsp; ✦</p>
-          <h2 style={{ textAlign: 'center', color: 'var(--purple)', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 0.5rem' }}>Start Your Adventure</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, margin: '0 0 2.5rem' }}>Choose how you want to explore Tiggy's Kingdom today</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>OUR LITTLE PROMISE</p>
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', margin: '0 0 0.75rem', color: 'var(--text-primary)' }}>Three joyful ways to grow</h2>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 auto 3rem', maxWidth: 520, lineHeight: 1.6 }}>
+            Everything in Tiggy's Kingdom is built around three simple, beautiful ideas.
+          </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-            {ADVENTURE_CARDS.map(card => (
-              <div key={card.title} className="card" style={{ background: card.bg, color: 'white', overflow: 'visible' }}>
-                <div style={{ padding: '2rem 1.75rem 1.5rem', display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>{card.icon}</div>
-                  <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.35rem', margin: 0, color: 'white' }}>{card.title}</h3>
-                  <p style={{ margin: 0, opacity: 0.9, lineHeight: 1.5, fontWeight: 600 }}>{card.desc}</p>
-                  <Link to={card.to} style={{ color: 'white', fontWeight: 800, fontSize: '1rem', marginTop: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>{card.cta}</Link>
+            {([
+              { color: '#C0392B', label: 'Play',  subtitle: 'Joyful adventures',  desc: "Songs, animated episodes, and games that make faith feel like the best kind of fun.",                              cta: 'Start playing →',  to: '/activities' },
+              { color: '#2E8B57', label: 'Learn', subtitle: 'Saints & feasts',    desc: "Gentle, faithful storytelling that teaches the lives of the saints and the meaning of the Church year.",           cta: 'Start learning →', to: '/episodes'   },
+              { color: '#2C5FA0', label: 'Grow',  subtitle: 'With God',           desc: "Simple prayers, kindness, and quiet moments that help little hearts grow close to Christ.",                         cta: 'Start growing →',  to: '/calendar'   },
+            ] as const).map(card => (
+              <div key={card.label} className="card" style={{ overflow: 'hidden', textAlign: 'center' }}>
+                <div style={{ background: card.color, padding: '2rem 1.5rem 1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625rem' }}>
+                  <div style={{ width: 82, height: 82, borderRadius: '50%', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.45)', flexShrink: 0 }}>
+                    <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.9rem', margin: 0, fontWeight: 700 }}>{card.label}</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, margin: 0, fontSize: '0.9rem' }}>{card.subtitle}</p>
+                </div>
+                <div style={{ padding: '1.5rem 1.75rem 1.75rem', background: 'white' }}>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.65, fontWeight: 600, margin: '0 0 1.25rem', fontSize: '0.925rem' }}>{card.desc}</p>
+                  <Link
+                    to={card.to}
+                    style={{ display: 'inline-block', color: card.color, fontWeight: 800, fontSize: '0.875rem', border: `2px solid ${card.color}`, padding: '0.45rem 1.1rem', borderRadius: '9999px', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = card.color; (e.currentTarget as HTMLAnchorElement).style.color = 'white'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = card.color; }}
+                  >{card.cta}</Link>
                 </div>
               </div>
             ))}
@@ -185,77 +174,83 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== LATEST EPISODES ===== */}
-      <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem' }}>
+      {/* ===== YOUTUBE EPISODES ===== */}
+      <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <h2 style={{ textAlign: 'center', color: 'var(--maroon)', fontStyle: 'italic', margin: '0 0 0.5rem', fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)' }}>
-            ✦ Latest Adventures from the Kingdom ✦
-          </h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 0 1.25rem' }}>New episodes added every week</p>
-
-          {/* Filter tabs */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            {(['all', 'episodes', 'shorts'] as VideoFilter[]).map(f => (
-              <button
-                key={f}
-                onClick={() => setVideoFilter(f)}
-                style={{
-                  padding: '0.35rem 1rem', borderRadius: '9999px', cursor: 'pointer',
-                  border: f === 'shorts' && videoFilter === f ? '2px solid #EF4444' : '2px solid transparent',
-                  fontWeight: 700, fontSize: '0.85rem', transition: 'all 0.15s',
-                  background: videoFilter === f ? (f === 'shorts' ? '#EF4444' : 'var(--maroon)') : 'var(--cream-dark)',
-                  color: videoFilter === f ? 'white' : 'var(--text-secondary)',
-                  boxShadow: videoFilter === f ? '0 2px 8px rgba(107,32,32,0.25)' : 'none',
-                }}
-              >
-                {f === 'all' ? 'All' : f === 'episodes' ? 'Episodes' : 'Shorts'}
-              </button>
-            ))}
+          <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#2E8B57', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>ON OUR YOUTUBE CHANNEL</p>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)', margin: 0, color: 'var(--text-primary)', maxWidth: 520, lineHeight: 1.2 }}>Stories the whole family can watch together</h2>
+            <Link to="/episodes" className="btn-maroon" style={{ flexShrink: 0, padding: '0.6rem 1.25rem', fontSize: '0.875rem', marginTop: '0.25rem' }}>▶ All episodes</Link>
           </div>
 
-          {/* Loading skeleton */}
           {ytLoading && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
-              {[...Array(4)].map((_, i) => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              {[...Array(3)].map((_, i) => (
                 <div key={i} className="card" style={{ pointerEvents: 'none' }}>
                   <div className="skeleton" style={{ paddingTop: '56.25%' }} />
-                  <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <div className="skeleton" style={{ height: 16, width: '80%', borderRadius: '0.4rem' }} />
-                    <div className="skeleton" style={{ height: 32, borderRadius: '0.75rem' }} />
+                    <div className="skeleton" style={{ height: 12, width: '50%', borderRadius: '0.4rem' }} />
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Episode grid (16:9) */}
-          {!ytLoading && videoFilter !== 'shorts' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
+          {!ytLoading && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
               {displayVideos.length > 0 ? displayVideos.map((v, idx) => {
                 const color = EP_COLORS[idx % EP_COLORS.length];
+                const isPlaying = playingId === v.id;
+                const aspectRatio = v.isShort ? '177.78%' : '56.25%';
                 return (
                   <div key={v.id} className="card">
-                    <div style={{ position: 'relative', background: `${color}22`, paddingTop: '56.25%' }}>
-                      <img
-                        src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`}
-                        alt={v.title}
-                        loading="lazy"
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={e => { e.currentTarget.style.display = 'none'; }}
-                      />
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', color }}>▶</div>
-                      </div>
-                      {v.isShort && (
-                        <span style={{ position: 'absolute', top: 10, left: 10, background: '#EF4444', color: 'white', borderRadius: '0.5rem', padding: '0.2rem 0.55rem', fontSize: '0.7rem', fontWeight: 900 }}>SHORT</span>
+                    <div style={{ position: 'relative', background: `${color}22`, paddingTop: aspectRatio, cursor: isPlaying ? 'default' : 'pointer' }}
+                         onClick={() => { if (!isPlaying) setPlayingId(v.id); }}>
+                      {isPlaying ? (
+                        <iframe
+                          src={`https://www.youtube.com/embed/${v.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          title={v.title}
+                        />
+                      ) : (
+                        <>
+                          <img
+                            src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`}
+                            alt={v.title}
+                            loading="lazy"
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={e => { e.currentTarget.style.display = 'none'; }}
+                          />
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.15)', transition: 'background 0.2s' }}>
+                            <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', color, boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}>▶</div>
+                          </div>
+                          {v.isShort && <span style={{ position: 'absolute', top: 10, left: 10, background: '#EF4444', color: 'white', borderRadius: '0.5rem', padding: '0.2rem 0.55rem', fontSize: '0.7rem', fontWeight: 900 }}>SHORT</span>}
+                        </>
                       )}
                     </div>
-                    <div style={{ padding: '1rem' }}>
-                      <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '1rem', margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>{v.title}</h3>
-                      <StarRating count={5} />
-                      <Link to="/episodes" state={{ resumeVideoId: v.id }}
-                        style={{ display: 'block', textAlign: 'center', background: 'var(--gold-pale)', color: 'var(--maroon)', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem', marginTop: '0.5rem' }}
-                      >Watch Now</Link>
+                    <div style={{ padding: '1.25rem' }}>
+                      <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '1rem', margin: '0 0 0.625rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{v.title}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.875rem' }}>
+                        <span style={{ color: '#F5C842', fontSize: '0.85rem' }}>★★★★★</span>
+                        <span style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '9999px' }}>Ages 5+</span>
+                      </div>
+                      {isPlaying ? (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={() => setPlayingId(null)}
+                            style={{ flex: 1, background: 'var(--cream-dark)', color: 'var(--text-secondary)', border: 'none', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem', cursor: 'pointer' }}
+                          >✕ Close</button>
+                          <Link to="/episodes" state={{ resumeVideoId: v.id }} style={{ flex: 1, display: 'block', textAlign: 'center', background: 'var(--maroon)', color: 'white', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem', textDecoration: 'none' }}>Full player →</Link>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setPlayingId(v.id)}
+                          style={{ width: '100%', background: 'var(--cream-dark)', color: 'var(--maroon)', border: 'none', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem', cursor: 'pointer' }}
+                        >▶ Watch Now</button>
+                      )}
                     </div>
                   </div>
                 );
@@ -266,123 +261,118 @@ export default function Home() {
               )}
             </div>
           )}
+        </div>
+      </section>
 
-          {/* Shorts grid (9:16 portrait) */}
-          {!ytLoading && videoFilter === 'shorts' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.875rem' }}>
-              {displayVideos.length > 0 ? displayVideos.map(v => (
-                <Link key={v.id} to="/episodes" style={{ display: 'block', borderRadius: '0.875rem', overflow: 'hidden', background: '#111', textDecoration: 'none' }}>
-                  <div style={{ position: 'relative', paddingTop: '177.78%', overflow: 'hidden' }}>
-                    <img
-                      src={`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`}
-                      alt={v.title}
-                      loading="lazy"
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
-                      onError={e => { (e.currentTarget as HTMLImageElement).src = `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`; }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.3) 45%, transparent 100%)' }} />
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ color: 'var(--maroon)', fontSize: '0.9rem', marginLeft: '3px' }}>▶</span>
-                      </div>
-                    </div>
-                    <span style={{ position: 'absolute', top: 8, left: 8, background: '#EF4444', color: 'white', borderRadius: '0.3rem', padding: '0.15rem 0.45rem', fontSize: '0.6rem', fontWeight: 900 }}>SHORT</span>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.625rem' }}>
-                      <p style={{ color: 'white', fontWeight: 800, fontSize: '0.75rem', margin: 0, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>{v.title}</p>
-                    </div>
-                  </div>
-                </Link>
-              )) : (
-                <div style={{ gridColumn: '1/-1' }}>
-                  <EmptyState message="No shorts yet — check back soon!" action={{ label: 'View All', to: '/episodes' }} />
-                </div>
-              )}
-            </div>
-          )}
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link to="/episodes" className="btn-maroon">View All Episodes →</Link>
+      {/* ===== SO MUCH TO DO ===== */}
+      <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: 'var(--text-primary)' }}>So much to do together</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            {[
+              { icon: '🎨', iconBg: '#FFE8E8', to: '/activities', title: 'Activities for Kids',  desc: 'Coloring pages, word puzzles, memory cards, printable crafts, and "Draw with Tiggy."', cta: 'Start playing →' },
+              { icon: '🙏', iconBg: '#E8F0FF', to: '/calendar',   title: 'Prayer Corner',        desc: 'Simple prayers for little ones, plus a feast-day calendar to follow the Church year.',  cta: 'Visit the corner →' },
+              { icon: '📚', iconBg: '#E8F8EC', to: '/shop',       title: 'The Bookshop',         desc: 'Hardcover storybooks, treasuries, and activity books — perfect for gifts and keepsakes.', cta: 'Browse books →' },
+            ].map(item => (
+              <div key={item.title} className="card" style={{ background: 'white', padding: '2rem' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '1rem', background: item.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', marginBottom: '1.25rem' }}>{item.icon}</div>
+                <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', margin: '0 0 0.75rem', color: 'var(--text-primary)' }}>{item.title}</h3>
+                <p style={{ color: 'var(--text-muted)', lineHeight: 1.65, fontWeight: 600, margin: '0 0 1.25rem', fontSize: '0.9rem' }}>{item.desc}</p>
+                <Link
+                  to={item.to}
+                  style={{ color: 'var(--text-secondary)', fontWeight: 800, fontSize: '0.9rem', transition: 'color 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = 'var(--maroon)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'var(--text-secondary)'}
+                >{item.cta}</Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ===== MEET TIGGY ===== */}
-      <section style={{ background: 'var(--cream-dark)', padding: '4rem 1.25rem' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+      {/* ===== MISSION (dark navy) ===== */}
+      <section style={{ background: '#1B2A4A', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 220, height: 220, borderRadius: '50%', overflow: 'hidden', margin: '0 auto', border: '4px solid var(--gold)', boxShadow: '0 8px 32px rgba(201,146,42,0.35)' }}>
-              <img src="/tiggy.png" alt="Tiggy the Lamb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div className="tiggy-float" style={{ maxWidth: 320, margin: '0 auto' }}>
+              <img src="/tiggy.png" alt="Tiggy the Lamb" style={{ width: '100%', maxHeight: 380, objectFit: 'contain', filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.45))' }} />
             </div>
           </div>
           <div>
-            <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'var(--gold)', fontSize: '1.1rem', margin: '0 0 0.25rem' }}>Meet Your Faithful Friend</p>
-            <h2 style={{ color: 'var(--maroon)', fontSize: 'clamp(2rem, 4vw, 2.75rem)', margin: '0 0 1rem' }}>Tiggy the Lamb</h2>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontWeight: 600, margin: '0 0 1.25rem' }}>Hello, dear friend! I'm Tiggy, and I'm so glad you're here. Just like the Good Shepherd loves His lambs, I'm here to guide you through wonderful stories about Jesus, the saints, and our beautiful Orthodox faith.</p>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontWeight: 600, margin: '0 0 1.5rem' }}>Together, we'll explore ancient churches, learn sacred prayers, discover brave heroes of faith, and grow closer to God — all while having joyful adventures!</p>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-              {[['🕊', 'Gentle & Kind'], ['📖', 'Loves Learning'], ['🙏', 'Prayerful Heart']].map(([icon, label]) => (
-                <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--gold-pale)', padding: '0.4rem 0.875rem', borderRadius: '9999px', color: 'var(--gold-dark)', fontWeight: 700, fontSize: '0.875rem' }}>{icon} {label}</span>
-              ))}
-            </div>
-            <Link to="/about" className="btn-gold">Meet More Friends →</Link>
+            <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>OUR MISSION</p>
+            <h2 style={{ color: 'white', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', margin: '0 0 1.25rem', lineHeight: 1.2 }}>
+              Faith planted gently, in stories children remember
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.72)', lineHeight: 1.8, fontWeight: 500, margin: '0 0 2rem', fontSize: '1rem' }}>
+              Tiggy's Kingdom was created by Orthodox parents who wanted screen time and bedtime to draw their children closer to Christ — without fear, without noise, just wonder.
+            </p>
+            {[
+              { icon: '⛪', label: 'Rooted in Tradition', desc: 'Faithful to Orthodox teaching, the saints, and the feasts.' },
+              { icon: '✨', label: 'Beautifully Made',     desc: 'Hand-crafted animation and illustration children adore.' },
+              { icon: '🛡',  label: 'Safe & Ad-Free',      desc: 'Gentle, screen-safe content parents can fully trust.' },
+            ].map(b => (
+              <div key={b.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', flexShrink: 0 }}>{b.icon}</div>
+                <div>
+                  <p style={{ color: 'white', fontWeight: 800, margin: '0 0 0.2rem', fontSize: '0.95rem' }}>{b.label}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', margin: 0, fontSize: '0.875rem', fontWeight: 500 }}>{b.desc}</p>
+                </div>
+              </div>
+            ))}
+            <Link to="/about" className="btn-gold" style={{ marginTop: '0.75rem' }}>Read our story →</Link>
           </div>
         </div>
       </section>
 
       {/* ===== TESTIMONIALS ===== */}
-      <section
-        style={{ background: '#F3F0FF', padding: '4rem 1.25rem' }}
-        onMouseEnter={() => setTestimonialPaused(true)}
-        onMouseLeave={() => setTestimonialPaused(false)}
-      >
-        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ color: 'var(--maroon)', margin: '0 0 0.25rem', fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)' }}>❤️ Loved by Families Worldwide</h2>
-          <p style={{ color: 'var(--text-muted)', fontWeight: 600, margin: '0 0 2.5rem' }}>Join thousands of families growing in faith</p>
-          <div className="card" style={{ padding: '2.5rem', maxWidth: 680, margin: '0 auto' }}>
-            <p style={{ fontSize: '2.5rem', color: 'var(--gold)', margin: '0 0 1rem', lineHeight: 1 }}>"</p>
-            <p style={{ fontSize: '1.05rem', lineHeight: 1.75, color: 'var(--text-primary)', fontWeight: 600, margin: '0 0 1.5rem', fontStyle: 'italic' }}>{t.quote}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
-              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--maroon)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.25rem' }}>👤</div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontWeight: 800, color: 'var(--maroon)', margin: 0 }}>{t.name}</p>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: 0, fontWeight: 600 }}>{t.role}</p>
-                <StarRating count={5} />
+      <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FROM OUR FAMILIES</p>
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: 'var(--text-primary)' }}>
+            Loved by parents, priests &amp; godparents
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            {TESTIMONIALS.map((t, i) => (
+              <div key={i} className="card" style={{ padding: '2rem' }}>
+                <div style={{ color: '#F5C842', fontSize: '0.9rem', marginBottom: '1rem', letterSpacing: '0.05em' }}>★★★★★</div>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0 0 1.5rem', fontSize: '0.95rem', fontStyle: 'italic' }}>"{t.quote}"</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--maroon)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '1rem', flexShrink: 0 }}>
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.875rem' }}>{t.name}</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: 0, fontWeight: 600 }}>{t.role}</p>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '1.5rem', alignItems: 'center' }}>
-            <button onClick={() => { setTestimonialIndex(i => (i - 1 + TESTIMONIALS.length) % TESTIMONIALS.length); setTestimonialPaused(true); }} style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--purple)', color: 'white', border: 'none', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>‹</button>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {TESTIMONIALS.map((_, i) => (
-                <button key={i} onClick={() => { setTestimonialIndex(i); setTestimonialPaused(true); }} style={{ width: i === testimonialIndex ? 24 : 10, height: 10, borderRadius: 9999, background: i === testimonialIndex ? 'var(--gold)' : 'var(--cream-border)', border: 'none', transition: 'all 0.2s', padding: 0, cursor: 'pointer' }} />
-              ))}
-            </div>
-            <button onClick={() => { setTestimonialIndex(i => (i + 1) % TESTIMONIALS.length); setTestimonialPaused(true); }} style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--purple)', color: 'white', border: 'none', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>›</button>
-          </div>
-          {testimonialPaused && (
-            <p style={{ marginTop: '0.75rem', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Auto-play paused</p>
-          )}
         </div>
       </section>
 
-      {/* ===== JOIN TIGGY'S FLOCK (Newsletter) ===== */}
-      <section style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)', padding: '4rem 1.25rem' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem', alignItems: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 0.5rem', border: '3px solid var(--gold)' }}>
-              <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <div style={{ fontSize: '2rem' }}>✉️</div>
+      {/* ===== NEWSLETTER ===== */}
+      <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 1.5rem', border: '3px solid var(--gold)', boxShadow: '0 4px 16px rgba(201,146,42,0.25)' }}>
+            <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          <div>
-            <h2 style={{ color: 'var(--purple)', margin: '0 0 0.5rem', fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}>Join Tiggy's Flock</h2>
-            <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.6, margin: '0 0 1.25rem' }}>Receive weekly blessings, saint stories &amp; free activities delivered straight to your inbox.</p>
-            <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="tk-input" style={{ flex: 1, minWidth: 180 }} required />
-              <button type="submit" className="btn-purple">Subscribe</button>
-            </form>
-            <p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: 'var(--gold-dark)', fontWeight: 700 }}>🎁 Get a free coloring book instantly when you subscribe!</p>
-            <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>We respect your privacy. Unsubscribe anytime. No spam, ever.</p>
-          </div>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', margin: '0 0 0.875rem', color: 'var(--text-primary)' }}>Join Tiggy's Kingdom Mail ✉</h2>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: '0 0 2rem', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto', fontSize: '1rem' }}>
+            Faith-filled fun every week — new episode stories, free printables, and feast-day reminders delivered to your inbox.
+          </p>
+          <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '0.625rem', maxWidth: 460, margin: '0 auto', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Your email address"
+              className="tk-input"
+              style={{ flex: 1, minWidth: 220 }}
+              required
+            />
+            <button type="submit" className="btn-maroon">Subscribe</button>
+          </form>
         </div>
       </section>
     </div>
