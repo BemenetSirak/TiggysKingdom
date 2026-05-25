@@ -30,8 +30,11 @@ import EmptyState from '../components/EmptyState';
 import { API } from '../lib/api';
 import { usePageMeta } from '../hooks/usePageMeta';
 
-const YT_API_KEY  = import.meta.env.VITE_YOUTUBE_API_KEY || '';
-const CHANNEL_ID  = 'UCY6m20ZtWVjAtbGqcqTYQng';
+const YT_API_KEY       = import.meta.env.VITE_YOUTUBE_API_KEY || '';
+const CHANNEL_ID       = 'UCY6m20ZtWVjAtbGqcqTYQng';
+const UPLOADS_PLAYLIST = CHANNEL_ID.replace(/^UC/, 'UU');
+const HOME_CACHE_KEY   = 'tk_yt_home_v2';
+const HOME_CACHE_TTL   = 6 * 60 * 60 * 1000;
 
 interface YTVideo { id: string; title: string; isShort: boolean; }
 
@@ -65,11 +68,20 @@ export default function Home() {
 
   useEffect(() => {
     if (!YT_API_KEY) { setYtLoading(false); return; }
-    fetch(`https://www.googleapis.com/youtube/v3/search?key=${YT_API_KEY}&channelId=${CHANNEL_ID}&part=id&type=video&order=viewCount&maxResults=15`)
+    // Serve from cache when fresh
+    try {
+      const s = localStorage.getItem(HOME_CACHE_KEY);
+      if (s) {
+        const { ts, data } = JSON.parse(s);
+        if (Date.now() - ts < HOME_CACHE_TTL) { setYtVideos(data); setYtLoading(false); return; }
+      }
+    } catch {}
+    // playlistItems = 1 quota unit; search = 100 units
+    fetch(`https://www.googleapis.com/youtube/v3/playlistItems?key=${YT_API_KEY}&playlistId=${UPLOADS_PLAYLIST}&part=contentDetails&maxResults=15`)
       .then(r => r.json())
       .then(async data => {
         if (data.error || !data.items?.length) return;
-        const ids = data.items.map((i: { id: { videoId: string } }) => i.id.videoId).join(',');
+        const ids = data.items.map((i: { contentDetails: { videoId: string } }) => i.contentDetails.videoId).join(',');
         const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?key=${YT_API_KEY}&id=${ids}&part=snippet,contentDetails`);
         const vData = await vRes.json();
         const mapped: YTVideo[] = (vData.items || []).map((v: {
@@ -82,6 +94,7 @@ export default function Home() {
           const isShort = dur <= 60 || /\#shorts/i.test(title + ' ' + (v.snippet.description || ''));
           return { id: v.id, title, isShort };
         });
+        try { localStorage.setItem(HOME_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: mapped })); } catch {}
         setYtVideos(mapped);
       })
       .catch(() => {})

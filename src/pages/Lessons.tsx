@@ -8,8 +8,24 @@ import GuestBanner from '../components/GuestBanner';
 
 const API_KEY           = import.meta.env.VITE_YOUTUBE_API_KEY || '';
 const CHANNEL_ID        = 'UCY6m20ZtWVjAtbGqcqTYQng';
+const UPLOADS_PLAYLIST  = CHANNEL_ID.replace(/^UC/, 'UU'); // free playlistItems vs expensive search
 const SEARCH_PAGE_SIZE  = 50;
 const DISPLAY_PAGE_SIZE = 15;
+const YT_CACHE_KEY      = 'tk_yt_lessons_v2';
+const YT_CACHE_TTL      = 6 * 60 * 60 * 1000; // 6 hours
+
+function getCachedVideos(): Video[] | null {
+  try {
+    const s = localStorage.getItem(YT_CACHE_KEY);
+    if (!s) return null;
+    const { ts, data } = JSON.parse(s);
+    if (Date.now() - ts > YT_CACHE_TTL) { localStorage.removeItem(YT_CACHE_KEY); return null; }
+    return data as Video[];
+  } catch { return null; }
+}
+function setCachedVideos(videos: Video[]) {
+  try { localStorage.setItem(YT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: videos })); } catch {}
+}
 
 type Filter = 'all' | 'episodes' | 'shorts';
 
@@ -438,20 +454,33 @@ export default function Lessons() {
   }, [resumeVideoId, allVideos, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPage = async (pageToken?: string) => {
+    // Serve first page from cache when available
+    if (!pageToken) {
+      const cached = getCachedVideos();
+      if (cached) { setAllVideos(cached); setLoading(false); return; }
+    }
+
     if (pageToken) setLoadingMore(true); else setLoading(true);
     setError(null);
     try {
-      let url = `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=id&type=video&order=date&maxResults=${SEARCH_PAGE_SIZE}`;
+      // playlistItems costs 1 quota unit vs search's 100
+      let url = `https://www.googleapis.com/youtube/v3/playlistItems?key=${API_KEY}&playlistId=${UPLOADS_PLAYLIST}&part=contentDetails&maxResults=${SEARCH_PAGE_SIZE}`;
       if (pageToken) url += `&pageToken=${pageToken}`;
       const sRes  = await fetch(url);
       const sData = await sRes.json();
-      if (sData.error) { setError(sData.error.message); return; }
+      if (sData.error) {
+        const msg = sData.error.message || '';
+        setError(/quota/i.test(msg)
+          ? 'YouTube video limit reached for today — videos will be back tomorrow. Sorry for the inconvenience!'
+          : msg);
+        return;
+      }
 
       nextPageRef.current = sData.nextPageToken || null;
-      const items: { id: { videoId: string } }[] = sData.items || [];
+      const items = (sData.items || []) as { contentDetails: { videoId: string } }[];
       if (items.length === 0) return;
 
-      const ids   = items.map(i => i.id.videoId).join(',');
+      const ids   = items.map(i => i.contentDetails.videoId).join(',');
       const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?key=${API_KEY}&id=${ids}&part=snippet,contentDetails`);
       const vData = await vRes.json();
 
@@ -468,6 +497,7 @@ export default function Lessons() {
         return { id: v.id, title, description: desc, isShort };
       });
 
+      if (!pageToken) setCachedVideos(mapped);
       setAllVideos(prev => pageToken ? [...prev, ...mapped] : mapped);
     } catch (err: unknown) {
       setError((err as Error).message);
