@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const GOALS = [
   { icon: '🌱', title: 'Plant seeds, gently',       desc: 'To give children a warm, joyful first encounter with the faith that grows with them for life.' },
@@ -10,6 +11,7 @@ const GOALS = [
 ];
 
 export default function About() {
+  usePageMeta('Our Mission', 'Why we made Tiggy — the story behind Tiggy\'s Kingdom and our mission to bring Orthodox Christian faith to children everywhere.');
   const [email, setEmail] = useState('');
   const { addToast } = useToast();
 

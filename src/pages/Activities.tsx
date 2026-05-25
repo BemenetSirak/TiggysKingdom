@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { useAuth } from '../context/AuthContext';
+import GuestBanner from '../components/GuestBanner';
 
 // ── Admin-editable data keys ──────────────────────────────────────────────────
 const ACTIVITIES_KEY = 'tk_activities';
@@ -138,9 +141,11 @@ function QuizSection() {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Activities() {
+  usePageMeta('Activities for Kids', 'Coloring pages, quizzes, crafts and printable activities for children — all rooted in Orthodox Christian faith.');
   const activities = getActivities().filter(a => a.active);
   const [email, setEmail] = useState('');
   const { addToast } = useToast();
+  const { user } = useAuth();
 
   const handleSubscribe = async (e: FormEvent) => {
     e.preventDefault();
@@ -176,6 +181,9 @@ export default function Activities() {
       {/* ── Activity cards grid ── */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {(!user || user.isGuest) && (
+            <GuestBanner message="Create a free account to download activity packs, track completed crafts, and save your favorites." />
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {activities.map(a => (
               <div key={a.id} className="card" style={{ padding: '1.75rem', background: 'white' }}>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth, type OrderActivity } from '../context/AuthContext';
@@ -141,6 +141,7 @@ function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', opacity: outOfStock ? 0.85 : 1 }}>
       {/* Book cover area */}
+      <Link to={`/shop/${product.id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <div style={{
         background: `linear-gradient(135deg, ${COVER_COLORS[product.id % COVER_COLORS.length]}18, ${COVER_COLORS[product.id % COVER_COLORS.length]}40)`,
         padding: '2rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -168,6 +169,7 @@ function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: 
           🤍
         </button>
       </div>
+      </Link>
 
       {/* Info */}
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '0.4rem' }}>
@@ -175,8 +177,10 @@ function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: 
           <StarRating rating={product.rating} />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>({product.sold || product.reviews || 0})</span>
         </div>
-        <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: 0, color: 'var(--text-primary)', lineHeight: 1.3 }}>
-          {product.title}
+        <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: 0, lineHeight: 1.3 }}>
+          <Link to={`/shop/${product.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none' }}>
+            {product.title}
+          </Link>
         </h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600 }}>{product.author}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import EmptyState from '../components/EmptyState';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 import { API } from '../lib/api';
 import { STATUS_COLORS } from '../lib/constants';
@@ -18,7 +19,8 @@ interface Order {
 
 
 export default function Dashboard() {
-  const { user, logout, getLastActivity, getWatchHistory, updateUser } = useAuth();
+  usePageMeta('My Dashboard', 'Manage your account, view your watch history and orders, and access your Tiggy\'s Kingdom profile.');
+  const { user, logout, getLastActivity, getWatchHistory, getFavorites, updateUser } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -27,9 +29,15 @@ export default function Dashboard() {
   const [editName, setEditName] = useState(false);
   const [newName, setNewName] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const [showPwChange, setShowPwChange] = useState(false);
+  const [curPw, setCurPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwError, setPwError] = useState('');
 
   const activity = user ? getLastActivity(user.id) : null;
   const watchHistory = user ? getWatchHistory(user.id) : [];
+  const favorites = user ? getFavorites(user.id) : [];
 
   function formatTime(secs: number) {
     if (!secs || secs <= 0) return '';
@@ -45,6 +53,21 @@ export default function Dashboard() {
       .catch(() => setOrders([]))
       .finally(() => setOrdersLoading(false));
   }, [user, navigate]);
+
+  const handleChangePassword = () => {
+    setPwError('');
+    if (!curPw) { setPwError('Enter your current password.'); return; }
+    if (newPw.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
+    const users: (typeof user & { password: string })[] = JSON.parse(localStorage.getItem('tk_users') || '[]');
+    const idx = users.findIndex(u => u.id === user.id);
+    if (idx === -1 || users[idx].password !== curPw) { setPwError('Current password is incorrect.'); return; }
+    users[idx].password = newPw;
+    localStorage.setItem('tk_users', JSON.stringify(users));
+    addToast('Password updated successfully!', 'success');
+    setCurPw(''); setNewPw(''); setConfirmPw('');
+    setShowPwChange(false);
+  };
 
   const handleSaveName = () => {
     if (!newName.trim() || newName.trim() === user.name) { setEditName(false); return; }
@@ -94,6 +117,7 @@ export default function Dashboard() {
           {[
             { icon: '🛒', label: 'Orders', value: ordersLoading ? '…' : String(orders.length), color: '#C9922A' },
             { icon: '▶', label: 'Videos Watched', value: watchHistory.length > 0 ? `${watchHistory.length} episode${watchHistory.length !== 1 ? 's' : ''}` : 'None yet', color: '#3B82F6' },
+            { icon: '♥', label: 'Saved', value: favorites.length > 0 ? `${favorites.length} episode${favorites.length !== 1 ? 's' : ''}` : 'None yet', color: '#EF4444' },
             { icon: '📅', label: 'Member Since', value: joined.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), color: '#7C3AED' },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
@@ -179,6 +203,43 @@ export default function Dashboard() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Saved Episodes */}
+        {favorites.length > 0 && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
+              <h2 style={{ color: 'var(--maroon)', fontSize: '1.05rem', margin: 0 }}>Saved Episodes</h2>
+              <Link to="/episodes" style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.85rem' }}>Browse all →</Link>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              {favorites.slice(0, 5).map(fav => (
+                <div key={fav.id} className="card" style={{ padding: '0.875rem 1.125rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <img
+                    src={`https://i.ytimg.com/vi/${fav.id}/default.jpg`}
+                    alt={fav.title}
+                    style={{ width: 72, height: 54, objectFit: 'cover', borderRadius: '0.375rem', flexShrink: 0, background: 'var(--cream-dark)' }}
+                    onError={e => { e.currentTarget.style.display = 'none'; }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: '0 0 0.2rem', fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {fav.title}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                      Saved {new Date(fav.savedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Link
+                    to="/episodes"
+                    state={{ resumeVideoId: fav.id }}
+                    style={{ background: 'var(--cream)', color: 'var(--maroon)', borderRadius: '0.5rem', padding: '0.35rem 0.75rem', fontWeight: 800, fontSize: '0.75rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+                  >
+                    ♥ Watch
+                  </Link>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -289,14 +350,43 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid var(--cream-border)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</p>
-                <p style={{ margin: '0.2rem 0 0', fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>••••••••</p>
-              </div>
-              <Link to="/forgot-password" style={{ background: 'none', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', color: 'var(--maroon)', cursor: 'pointer' }}>
-                Change
-              </Link>
+            <div style={{ borderTop: '1px solid var(--cream-border)', paddingTop: '1rem' }}>
+              {showPwChange ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                  <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Change Password</p>
+                  {pwError && <p style={{ margin: 0, color: '#DC2626', fontWeight: 700, fontSize: '0.82rem' }}>{pwError}</p>}
+                  {(['Current password', 'New password (8+ chars)', 'Confirm new password'] as const).map((label, i) => {
+                    const vals = [curPw, newPw, confirmPw];
+                    const setters = [setCurPw, setNewPw, setConfirmPw];
+                    return (
+                      <input
+                        key={label}
+                        type="password"
+                        placeholder={label}
+                        value={vals[i]}
+                        onChange={e => setters[i](e.target.value)}
+                        style={{ padding: '0.5rem 0.75rem', border: '2px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontWeight: 600, fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                        onFocus={e => { e.currentTarget.style.borderColor = 'var(--gold)'; }}
+                        onBlur={e => { e.currentTarget.style.borderColor = 'var(--cream-border)'; }}
+                      />
+                    );
+                  })}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={handleChangePassword} className="btn-gold" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}>Save Password</button>
+                    <button onClick={() => { setShowPwChange(false); setCurPw(''); setNewPw(''); setConfirmPw(''); setPwError(''); }} className="btn-outline-maroon" style={{ padding: '0.45rem 0.875rem', fontSize: '0.85rem' }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</p>
+                    <p style={{ margin: '0.2rem 0 0', fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>••••••••</p>
+                  </div>
+                  <button onClick={() => setShowPwChange(true)} style={{ background: 'none', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', color: 'var(--maroon)', cursor: 'pointer' }}>
+                    Change
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

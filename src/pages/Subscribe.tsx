@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const GUIDES_KEY = 'tk_parent_guides';
 const GUIDE_FILES_KEY = 'tk_guide_files';
@@ -86,6 +87,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Subscribe() {
+  usePageMeta('For Parents', 'Safe, faithful Orthodox content your children will love. Parent guides, teacher resources, and feast-day calendars — all free.');
   const guides = getGuides().filter(g => g.active);
   const guideFiles = getGuideFiles();
   const [email, setEmail] = useState('');

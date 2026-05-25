@@ -5,6 +5,7 @@ import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
 import ScrollToTop from './components/ScrollToTop';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Lessons from './pages/Lessons';
 import Shop from './pages/Shop';
@@ -21,12 +22,14 @@ import NotFound from './pages/NotFound';
 import Admin from './pages/Admin';
 import AdminLogin from './pages/AdminLogin';
 import Stories from './pages/Stories';
+import ShopProduct from './pages/ShopProduct';
 import Calendar from './pages/Calendar';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 
 function App() {
   return (
+    <ErrorBoundary>
     <ThemeProvider>
     <AuthProvider>
       <CartProvider>
@@ -46,6 +49,7 @@ function App() {
                     <Route path="/episodes" element={<Lessons />} />
                     <Route path="/lessons" element={<Lessons />} />
                     <Route path="/shop" element={<Shop />} />
+                    <Route path="/shop/:id" element={<ShopProduct />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/orders" element={<Orders />} />
                     <Route path="/success" element={<Success />} />
@@ -69,6 +73,7 @@ function App() {
       </CartProvider>
     </AuthProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

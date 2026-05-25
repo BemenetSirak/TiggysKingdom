@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import EmptyState from '../components/EmptyState';
+import GuestBanner from '../components/GuestBanner';
 
 const API_KEY           = import.meta.env.VITE_YOUTUBE_API_KEY || '';
 const CHANNEL_ID        = 'UCY6m20ZtWVjAtbGqcqTYQng';
@@ -138,13 +139,15 @@ function TiggyThumbnail() {
 }
 
 // ── Episode card — used for All + Episodes tabs ───────────────────────────────
-function EpisodeCard({ video, index, badge, savedProgress, isResuming, onProgress }: {
+function EpisodeCard({ video, index, badge, savedProgress, isResuming, isFavorited, onProgress, onToggleFavorite }: {
   video: Video;
   index: number;
   badge?: string;          // "Ep. N" | "SHORT" | undefined
   savedProgress?: { timestamp: number; duration: number } | null;
   isResuming: boolean;
+  isFavorited: boolean;
   onProgress: (video: Video, index: number, t: number, d: number) => void;
+  onToggleFavorite: (video: Video) => void;
 }) {
   const [playing, setPlaying] = useState(isResuming);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -236,12 +239,32 @@ function EpisodeCard({ video, index, badge, savedProgress, isResuming, onProgres
           )}
         </div>
         {!playing && (
-          <button
-            onClick={() => setPlaying(true)}
-            style={{ display: 'block', width: '100%', textAlign: 'center', background: ts > 0 ? 'var(--gold)' : badgeIsShort ? '#EF4444' : 'var(--maroon)', color: 'white', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem', border: 'none', cursor: 'pointer', marginTop: '0.25rem' }}
-          >
-            {ts > 0 ? `▶ Resume at ${formatTime(ts)}` : badgeIsShort ? '▶ Watch Short' : '▶ Watch Episode'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.25rem' }}>
+            <button
+              onClick={() => setPlaying(true)}
+              style={{ flex: 1, textAlign: 'center', background: ts > 0 ? 'var(--gold)' : badgeIsShort ? '#EF4444' : 'var(--maroon)', color: 'white', borderRadius: '0.75rem', padding: '0.5rem', fontWeight: 800, fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+            >
+              {ts > 0 ? `▶ Resume at ${formatTime(ts)}` : badgeIsShort ? '▶ Watch Short' : '▶ Watch Episode'}
+            </button>
+            <button
+              onClick={() => onToggleFavorite(video)}
+              title={isFavorited ? 'Remove from favorites' : 'Save to favorites'}
+              style={{ background: isFavorited ? '#FEF3C7' : 'var(--cream-dark)', color: isFavorited ? '#C9922A' : 'var(--text-secondary)', border: isFavorited ? '1.5px solid #C9922A' : 'none', borderRadius: '0.75rem', padding: '0.5rem 0.65rem', cursor: 'pointer', fontSize: '1rem', flexShrink: 0, transition: 'all 0.15s' }}
+            >
+              {isFavorited ? '♥' : '♡'}
+            </button>
+            <button
+              onClick={() => {
+                const url = `https://www.youtube.com/watch?v=${video.id}`;
+                if (navigator.share) { navigator.share({ title: video.title, url }); }
+                else { navigator.clipboard.writeText(url).then(() => alert('Link copied!')); }
+              }}
+              title="Share"
+              style={{ background: 'var(--cream-dark)', color: 'var(--text-secondary)', border: 'none', borderRadius: '0.75rem', padding: '0.5rem 0.65rem', cursor: 'pointer', fontSize: '1rem', flexShrink: 0 }}
+            >
+              ↗
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -394,7 +417,7 @@ export default function Lessons() {
   const [error, setError]               = useState<string | null>(null);
   const nextPageRef                     = useRef<string | null>(null);
 
-  const { user, saveVideoProgress, getVideoProgress } = useAuth();
+  const { user, saveVideoProgress, getVideoProgress, addFavorite, removeFavorite, getFavorites } = useAuth();
   const location    = useLocation();
   const resumeVideoId = location.state?.resumeVideoId;
 
@@ -478,6 +501,14 @@ export default function Lessons() {
     saveVideoProgress(user.id, { videoId: video.id, title: video.title, episodeNum: index + 1, timestamp, duration });
   };
 
+  const favoriteIds = new Set((user && !user.isGuest) ? getFavorites(user.id).map(f => f.id) : []);
+
+  const handleToggleFavorite = (video: Video) => {
+    if (!user || user.isGuest) { alert('Sign in to save favorites.'); return; }
+    if (favoriteIds.has(video.id)) { removeFavorite(user.id, video.id); }
+    else { addFavorite(user.id, { id: video.id, title: video.title }); }
+  };
+
   // Compute episode number label only for Episodes tab
   let epNumCounter = 0;
   const videosWithBadge = visibleVideos.map(v => {
@@ -517,6 +548,11 @@ export default function Lessons() {
       </section>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2.5rem 1.25rem' }}>
+
+        {/* ── Guest upgrade prompt ── */}
+        {(!user || user.isGuest) && (
+          <GuestBanner message="Sign in to save your watch progress, favorite episodes, and pick up right where you left off." />
+        )}
 
         {/* ── Filter tabs ── */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2.5rem', justifyContent: 'center' }}>
@@ -588,7 +624,9 @@ export default function Lessons() {
                   badge={video.badge}
                   isResuming={video.id === resumeVideoId}
                   savedProgress={user ? getVideoProgress(user.id, video.id) : null}
+                  isFavorited={favoriteIds.has(video.id)}
                   onProgress={handleProgress}
+                  onToggleFavorite={handleToggleFavorite}
                 />
               ))}
             </div>

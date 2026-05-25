@@ -34,6 +34,8 @@ interface AdminOrder {
   items?: Array<{ title: string; price: number; quantity?: number }>;
   note?: string;
   cancellationRequested?: boolean;
+  trackingNumber?: string;
+  trackingCarrier?: string;
 }
 
 interface AdminSubscriber {
@@ -371,6 +373,9 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
   const [secAgo, setSecAgo] = useState(0);
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
   const [editNoteVal, setEditNoteVal] = useState('');
+  const [editTrackId, setEditTrackId] = useState<string | null>(null);
+  const [editTrackVal, setEditTrackVal] = useState('');
+  const [editCarrierVal, setEditCarrierVal] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState('processing');
 
@@ -422,6 +427,13 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
     toast('Note saved.', 'success');
     setOrders(prev => prev.map(o => o.id === id ? { ...o, note: editNoteVal } : o));
     setEditNoteId(null);
+  };
+
+  const saveTracking = async (id: string) => {
+    await apiFetch(`/api/admin/orders/${id}/tracking`, { method: 'PUT', body: JSON.stringify({ tracking_number: editTrackVal.trim(), carrier: editCarrierVal.trim() }) });
+    toast('Tracking saved.', 'success');
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, trackingNumber: editTrackVal.trim() || undefined, trackingCarrier: editCarrierVal.trim() || undefined } : o));
+    setEditTrackId(null);
   };
 
   const exportCSV = () => {
@@ -540,7 +552,7 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
             <TH><input type="checkbox" checked={allPageSelected} onChange={toggleAll} style={{ width: 15, height: 15, cursor: 'pointer' }} /></TH>
-            <TH>Order ID</TH><TH>Customer</TH><TH>Items</TH><TH>Total</TH><TH>Status</TH><TH>Date</TH><TH>Note</TH><TH>Update</TH>
+            <TH>Order ID</TH><TH>Customer</TH><TH>Items</TH><TH>Total</TH><TH>Status</TH><TH>Date</TH><TH>Tracking</TH><TH>Note</TH><TH>Update</TH>
           </tr></thead>
           <tbody>
             {pageSlice.map(o => (
@@ -569,6 +581,33 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
                 <TD><span style={{ fontWeight: 800, color: 'var(--maroon)' }}>${(o.total || 0).toFixed(2)}</span></TD>
                 <TD><StatusBadge status={o.status} /></TD>
                 <TD style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</TD>
+                <TD style={{ maxWidth: 150 }}>
+                  {editTrackId === o.id ? (
+                    <span style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <input
+                        type="text" value={editTrackVal} autoFocus placeholder="Tracking #"
+                        onChange={e => setEditTrackVal(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveTracking(o.id); if (e.key === 'Escape') setEditTrackId(null); }}
+                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--maroon)', borderRadius: '0.3rem', fontFamily: 'Nunito', fontSize: '0.8rem', outline: 'none' }}
+                      />
+                      <input
+                        type="text" value={editCarrierVal} placeholder="Carrier (UPS, USPS…)"
+                        onChange={e => setEditCarrierVal(e.target.value)}
+                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.3rem', fontFamily: 'Nunito', fontSize: '0.78rem', outline: 'none' }}
+                      />
+                      <span style={{ display: 'inline-flex', gap: '0.25rem' }}>
+                        <button onClick={() => saveTracking(o.id)} style={{ padding: '0.2rem 0.4rem', border: 'none', background: '#DCFCE7', color: '#166534', borderRadius: '0.3rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>✓</button>
+                        <button onClick={() => setEditTrackId(null)} style={{ padding: '0.2rem 0.4rem', border: 'none', background: 'var(--cream)', color: 'var(--text-muted)', borderRadius: '0.3rem', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>✕</button>
+                      </span>
+                    </span>
+                  ) : (
+                    <span
+                      onClick={() => { setEditTrackId(o.id); setEditTrackVal(o.trackingNumber || ''); setEditCarrierVal(o.trackingCarrier || ''); }}
+                      title="Click to set tracking number"
+                      style={{ cursor: 'pointer', fontSize: '0.78rem', color: o.trackingNumber ? '#166534' : 'var(--text-muted)', borderBottom: '1px dashed var(--cream-border)', fontStyle: o.trackingNumber ? 'normal' : 'italic', fontWeight: o.trackingNumber ? 700 : 400 }}
+                    >{o.trackingNumber ? `${o.trackingCarrier ? o.trackingCarrier + ' · ' : ''}${o.trackingNumber}` : 'Add tracking…'}</span>
+                  )}
+                </TD>
                 <TD style={{ maxWidth: 160 }}>
                   {editNoteId === o.id ? (
                     <span style={{ display: 'inline-flex', gap: '0.25rem', alignItems: 'center' }}>
@@ -897,6 +936,7 @@ function EpisodesTab({ toast }: { toast: ToastFn }) {
 const ACTION_LABELS: Record<string, string> = {
   order_status:      '📦 Order Status',
   order_note:        '📝 Order Note',
+  order_tracking:    '🚚 Order Tracking',
   product_create:    '➕ Product Created',
   product_update:    '✏️ Product Updated',
   product_delete:    '🗄 Product Archived',
@@ -907,6 +947,9 @@ const ACTION_LABELS: Record<string, string> = {
 function ActivityTab() {
   const [log, setLog] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionFilter, setActionFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -917,27 +960,86 @@ function ActivityTab() {
   const fmtDetails = (action: string, details: Record<string, unknown>) => {
     if (action === 'order_status') return `${details.orderId}: ${details.from} → ${details.to}`;
     if (action === 'order_note') return `${details.orderId}: "${details.note}"`;
+    if (action === 'order_tracking') return `${details.orderId}: ${details.tracking_number}${details.carrier ? ' (' + details.carrier + ')' : ''}`;
     if (action === 'email_blast') return `"${details.subject}" — sent ${details.sent}/${details.total}`;
     if (action === 'subscriber_remove') return String(details.email || '');
     return `${details.title || details.id || JSON.stringify(details)}`;
   };
 
+  const uniqueActions = ['all', ...Array.from(new Set(log.map(e => e.action)))];
+
+  const filtered = log.filter(e => {
+    if (actionFilter !== 'all' && e.action !== actionFilter) return false;
+    if (dateFrom && new Date(e.at) < new Date(dateFrom)) return false;
+    if (dateTo && new Date(e.at) > new Date(dateTo + 'T23:59:59')) return false;
+    return true;
+  });
+
+  const exportCSV = () => {
+    const rows = [
+      ['Action', 'Details', 'Time'],
+      ...filtered.map(e => [
+        ACTION_LABELS[e.action] || e.action,
+        fmtDetails(e.action, e.details),
+        new Date(e.at).toLocaleString(),
+      ]),
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activity-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Activity Log</h2>
-        <button onClick={load} style={{ ...btnBase }}>↻ Refresh</button>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={exportCSV} disabled={filtered.length === 0} style={{ padding: '0.3rem 0.875rem', borderRadius: '0.4rem', border: '1.5px solid var(--cream-border)', background: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: '#22C55E' }}>
+            ⬇ Export CSV
+          </button>
+          <button onClick={load} style={{ ...btnBase }}>↻ Refresh</button>
+        </div>
       </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
+        <select
+          value={actionFilter}
+          onChange={e => setActionFilter(e.target.value)}
+          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Nunito', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-primary)', background: 'white' }}
+        >
+          {uniqueActions.map(a => (
+            <option key={a} value={a}>{a === 'all' ? 'All actions' : ACTION_LABELS[a] || a}</option>
+          ))}
+        </select>
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} placeholder="From"
+          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Nunito', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }} />
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} placeholder="To"
+          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Nunito', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }} />
+        {(actionFilter !== 'all' || dateFrom || dateTo) && (
+          <button onClick={() => { setActionFilter('all'); setDateFrom(''); setDateTo(''); }}
+            style={{ padding: '0.3rem 0.625rem', border: 'none', background: 'var(--cream)', borderRadius: '0.4rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            ✕ Clear
+          </button>
+        )}
+        {!loading && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{filtered.length} entries</span>}
+      </div>
+
       <div style={{ background: 'white', borderRadius: '1rem', boxShadow: '0 2px 12px rgba(107,32,32,0.07)', overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontWeight: 600 }}>Loading…</p>
-        ) : log.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontWeight: 600 }}>No activity yet. Actions taken in the admin panel will appear here.</p>
+        ) : filtered.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontWeight: 600 }}>{log.length === 0 ? 'No activity yet. Actions taken in the admin panel will appear here.' : 'No entries match these filters.'}</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr><TH>Action</TH><TH>Details</TH><TH>Time</TH></tr></thead>
             <tbody>
-              {log.map(entry => (
+              {filtered.map(entry => (
                 <tr key={entry.id}>
                   <TD style={{ whiteSpace: 'nowrap' }}>
                     <span style={{ background: 'var(--cream)', padding: '0.2rem 0.6rem', borderRadius: '0.375rem', fontSize: '0.78rem', fontWeight: 700 }}>
@@ -1288,12 +1390,202 @@ function GuidesTab() {
   );
 }
 
+// ── StripeSubsTab ─────────────────────────────────────────────────────────────
+interface StripeSub {
+  id: string;
+  status: string;
+  email: string | null;
+  name: string | null;
+  planName: string;
+  amount: number;
+  currency: string;
+  interval: string;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  trialEnd: string | null;
+  createdAt: string;
+}
+
+const SUB_STATUS_COLORS: Record<string, string> = {
+  active: '#22C55E',
+  trialing: '#3B82F6',
+  past_due: '#F97316',
+  canceled: '#EF4444',
+  unpaid: '#EF4444',
+  incomplete: '#9CA3AF',
+};
+
+function StripeSubsTab() {
+  const [subs, setSubs] = useState<StripeSub[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const load = () => {
+    setLoading(true);
+    apiFetch('/api/admin/stripe-subscriptions')
+      .then(d => { setSubs(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, []);
+
+  const statuses = ['all', ...Array.from(new Set(subs.map(s => s.status)))];
+  const filtered = statusFilter === 'all' ? subs : subs.filter(s => s.status === statusFilter);
+  const { page, setPage, totalPages, slice } = usePager(filtered, 25, statusFilter);
+
+  const mrr = subs
+    .filter(s => s.status === 'active' || s.status === 'trialing')
+    .reduce((sum, s) => sum + (s.interval === 'year' ? s.amount / 12 : s.amount), 0);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Stripe Subscriptions</h2>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.3rem 0.875rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.85rem' }}>
+            MRR ~${mrr.toFixed(2)}/mo
+          </span>
+          <button onClick={load} style={{ ...btnBase }}>↻ Refresh</button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        {statuses.map(s => (
+          <button key={s} onClick={() => setStatusFilter(s)}
+            style={{ padding: '0.3rem 0.875rem', borderRadius: '9999px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem',
+              background: statusFilter === s ? 'var(--maroon)' : 'var(--cream-dark)', color: statusFilter === s ? 'white' : 'var(--text-secondary)', transition: 'all 0.15s' }}
+          >{s === 'all' ? `All (${subs.length})` : `${s} (${subs.filter(x => x.status === s).length})`}</button>
+        ))}
+      </div>
+
+      <div style={{ overflowX: 'auto', background: 'white', borderRadius: '1rem', boxShadow: '0 2px 12px rgba(107,32,32,0.07)' }}>
+        {loading ? (
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontWeight: 600 }}>Loading from Stripe…</p>
+        ) : filtered.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontWeight: 600 }}>No subscriptions found.</p>
+        ) : (
+          <>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr><TH>Customer</TH><TH>Plan</TH><TH>Amount</TH><TH>Status</TH><TH>Renews</TH><TH>Since</TH></tr></thead>
+              <tbody>
+                {slice.map(s => (
+                  <tr key={s.id}>
+                    <TD>
+                      <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{s.name || '—'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.email || ''}</div>
+                    </TD>
+                    <TD><span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{s.planName}</span></TD>
+                    <TD><span style={{ fontWeight: 800, color: 'var(--maroon)' }}>${s.amount.toFixed(2)}/{s.interval}</span></TD>
+                    <TD>
+                      <span style={{ background: `${SUB_STATUS_COLORS[s.status] || '#9CA3AF'}18`, color: SUB_STATUS_COLORS[s.status] || '#9CA3AF', borderRadius: '9999px', padding: '0.2rem 0.6rem', fontSize: '0.72rem', fontWeight: 800 }}>
+                        {s.cancelAtPeriodEnd ? `${s.status} (cancels)` : s.trialEnd ? 'trialing' : s.status}
+                      </span>
+                    </TD>
+                    <TD style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString() : '—'}
+                    </TD>
+                    <TD style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {new Date(s.createdAt).toLocaleDateString()}
+                    </TD>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pager page={page} totalPages={totalPages} setPage={setPage} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Admin ────────────────────────────────────────────────────────────────
+// ── SettingsTab ───────────────────────────────────────────────────────────────
+function SettingsTab({ toast }: { toast: ToastFn }) {
+  const [curPw, setCurPw]       = useState('');
+  const [newPw, setNewPw]       = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwError, setPwError]   = useState('');
+  const [savingPw, setSavingPw] = useState(false);
+
+  const [lowStockVal, setLowStockVal]     = useState('5');
+  const [savingStock, setSavingStock]     = useState(false);
+
+  useEffect(() => {
+    apiFetch('/api/admin/settings').then(d => { if (d.lowStockThreshold) setLowStockVal(String(d.lowStockThreshold)); }).catch(() => {});
+  }, []);
+
+  const handlePwChange = async (e: FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    if (newPw.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
+    setSavingPw(true);
+    try {
+      const res = await apiFetch('/api/admin/settings/password', { method: 'PUT', body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }) });
+      if (res.error) { setPwError(res.error); } else { toast('Password changed successfully!', 'success'); setCurPw(''); setNewPw(''); setConfirmPw(''); }
+    } catch { setPwError('Failed to change password.'); }
+    setSavingPw(false);
+  };
+
+  const handleSaveStock = async (e: FormEvent) => {
+    e.preventDefault();
+    const val = parseInt(lowStockVal);
+    if (isNaN(val) || val < 1) return;
+    setSavingStock(true);
+    try {
+      await apiFetch('/api/admin/settings/low-stock', { method: 'PUT', body: JSON.stringify({ threshold: val }) });
+      toast(`Low-stock threshold set to ${val}`, 'success');
+    } catch { toast('Failed to save setting.', 'error'); }
+    setSavingStock(false);
+  };
+
+  const inputStyle: CSSProperties = { padding: '0.55rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' as const };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 520 }}>
+      <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Settings</h2>
+
+      {/* Password change */}
+      <div className="card" style={{ padding: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Change Admin Password</h3>
+        <form onSubmit={handlePwChange} style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+          {pwError && <p style={{ margin: 0, color: '#DC2626', fontWeight: 700, fontSize: '0.82rem' }}>{pwError}</p>}
+          <input type="password" placeholder="Current password" value={curPw} onChange={e => setCurPw(e.target.value)} style={inputStyle} required />
+          <input type="password" placeholder="New password (8+ characters)" value={newPw} onChange={e => setNewPw(e.target.value)} style={inputStyle} required />
+          <input type="password" placeholder="Confirm new password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} style={inputStyle} required />
+          <button type="submit" disabled={savingPw} className="btn-maroon" style={{ marginTop: '0.25rem', padding: '0.6rem', fontSize: '0.9rem', opacity: savingPw ? 0.7 : 1 }}>
+            {savingPw ? 'Saving…' : 'Update Password'}
+          </button>
+        </form>
+      </div>
+
+      {/* Low-stock threshold */}
+      <div className="card" style={{ padding: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Low-Stock Alert Threshold</h3>
+        <p style={{ margin: '0 0 0.875rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.875rem' }}>
+          Products with stock at or below this number will show a warning badge in the shop.
+        </p>
+        <form onSubmit={handleSaveStock} style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
+          <input
+            type="number" min="1" max="99" value={lowStockVal}
+            onChange={e => setLowStockVal(e.target.value)}
+            style={{ ...inputStyle, width: 80 }}
+          />
+          <button type="submit" disabled={savingStock} className="btn-gold" style={{ padding: '0.55rem 1.25rem', fontSize: '0.9rem', opacity: savingStock ? 0.7 : 1 }}>
+            {savingStock ? 'Saving…' : 'Save'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: 'overview',    label: 'Overview',    icon: '📊', key: 'o' },
   { id: 'products',    label: 'Products',    icon: '📦', key: 'p' },
   { id: 'orders',      label: 'Orders',      icon: '🛒', key: 'r' },
   { id: 'subscribers', label: 'Subscribers', icon: '✉️', key: 's' },
+  { id: 'stripe-subs', label: 'Subscriptions', icon: '💳', key: 'b' },
   { id: 'users',       label: 'Users',       icon: '👥', key: 'u' },
   { id: 'episodes',    label: 'Episodes',    icon: '▶',  key: 'e' },
   { id: 'activities',  label: 'Activities',  icon: '🎨', key: 'a' },
@@ -1301,6 +1593,7 @@ const TABS = [
   { id: 'prayers',     label: 'Prayers',     icon: '🙏', key: 'y' },
   { id: 'guides',      label: 'Guides',      icon: '📋', key: 'g' },
   { id: 'activity',    label: 'Audit Log',   icon: '📈', key: 'l' },
+  { id: 'settings',    label: 'Settings',    icon: '⚙️',  key: 'x' },
 ];
 
 export default function Admin() {
@@ -1598,6 +1891,7 @@ export default function Admin() {
           {tab === 'products'    && <ProductsTab    toast={addToast} />}
           {tab === 'orders'      && <OrdersTab      toast={addToast} />}
           {tab === 'subscribers' && <SubscribersTab toast={addToast} />}
+          {tab === 'stripe-subs' && <StripeSubsTab />}
           {tab === 'users'       && <UsersTab />}
           {tab === 'episodes'    && <EpisodesTab    toast={addToast} />}
           {tab === 'activities'  && <ActivitiesTab />}
@@ -1605,6 +1899,7 @@ export default function Admin() {
           {tab === 'prayers'     && <PrayersTab />}
           {tab === 'guides'      && <GuidesTab />}
           {tab === 'activity'    && <ActivityTab />}
+          {tab === 'settings'    && <SettingsTab   toast={addToast} />}
         </main>
       </div>
     </div>

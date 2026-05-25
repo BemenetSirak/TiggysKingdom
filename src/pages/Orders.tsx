@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import EmptyState from '../components/EmptyState';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 import { API } from '../lib/api';
 import { STATUS_COLORS } from '../lib/constants';
@@ -22,6 +23,8 @@ interface Order {
   createdAt?: string;
   items?: OrderItem[];
   cancellationRequested?: boolean;
+  trackingNumber?: string;
+  trackingCarrier?: string;
 }
 
 function StatusTracker({ status }: { status: string }) {
@@ -67,6 +70,7 @@ function StatusTracker({ status }: { status: string }) {
 }
 
 export default function Orders() {
+  usePageMeta('My Orders', 'Track and manage your Tiggy\'s Kingdom orders, view status updates, and request cancellations.');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -148,6 +152,21 @@ export default function Orders() {
                 <div style={{ marginBottom: '1.25rem' }}>
                   <StatusTracker status={order.status} />
                 </div>
+
+                {/* Tracking */}
+                {order.trackingNumber && (
+                  <div style={{ marginBottom: '1rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '0.75rem', padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '1.25rem' }}>🚚</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontWeight: 800, fontSize: '0.85rem', color: '#166534' }}>
+                        {order.trackingCarrier ? `${order.trackingCarrier} — ` : ''}Tracking #{order.trackingNumber}
+                      </p>
+                      <p style={{ margin: '0.1rem 0 0', fontSize: '0.78rem', color: '#15803D', fontWeight: 600 }}>
+                        Your order is on its way!
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Items */}
                 <div style={{ borderTop: '1px solid var(--cream-border)', paddingTop: '1rem' }}>

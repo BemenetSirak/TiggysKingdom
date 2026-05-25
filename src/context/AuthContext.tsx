@@ -36,6 +36,12 @@ export interface OrderActivity {
 
 export type Activity = EpisodeActivity | OrderActivity;
 
+export interface FavoriteVideo {
+  id: string;
+  title: string;
+  savedAt: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -49,6 +55,9 @@ interface AuthContextValue {
   saveVideoProgress: (userId: string, progress: Omit<VideoProgress, 'lastWatchedAt'>) => void;
   getVideoProgress: (userId: string, videoId: string) => VideoProgress | null;
   getWatchHistory: (userId: string) => VideoProgress[];
+  addFavorite: (userId: string, video: { id: string; title: string }) => void;
+  removeFavorite: (userId: string, videoId: string) => void;
+  getFavorites: (userId: string) => FavoriteVideo[];
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -162,8 +171,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveActivity(userId, { type: 'episode', videoId, title, episodeNum, timestamp } as Omit<EpisodeActivity, 'savedAt'>);
   }, [saveActivity]);
 
+  const getFavorites = useCallback((userId: string): FavoriteVideo[] => {
+    if (!userId || userId === 'guest') return [];
+    try { return JSON.parse(localStorage.getItem(`tk_favorites_${userId}`) || '[]'); }
+    catch { return []; }
+  }, []);
+
+  const addFavorite = useCallback((userId: string, video: { id: string; title: string }) => {
+    if (!userId || userId === 'guest') return;
+    const favs = getFavorites(userId);
+    if (favs.some(f => f.id === video.id)) return;
+    favs.unshift({ ...video, savedAt: new Date().toISOString() });
+    localStorage.setItem(`tk_favorites_${userId}`, JSON.stringify(favs));
+  }, [getFavorites]);
+
+  const removeFavorite = useCallback((userId: string, videoId: string) => {
+    if (!userId || userId === 'guest') return;
+    const favs = getFavorites(userId).filter(f => f.id !== videoId);
+    localStorage.setItem(`tk_favorites_${userId}`, JSON.stringify(favs));
+  }, [getFavorites]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, loginAsGuest, updateUser, saveActivity, getLastActivity, saveVideoProgress, getVideoProgress, getWatchHistory }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, loginAsGuest, updateUser, saveActivity, getLastActivity, saveVideoProgress, getVideoProgress, getWatchHistory, addFavorite, removeFavorite, getFavorites }}>
       {children}
     </AuthContext.Provider>
   );

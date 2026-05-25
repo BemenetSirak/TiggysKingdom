@@ -171,10 +171,33 @@ app.get("/health", async (_req: Request, res: Response) => {
 // PUBLIC ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
 
+// ── Promo code validation ─────────────────────────────────────────────────────
+app.post("/api/promo/validate", async (req: Request, res: Response) => {
+  const { code } = req.body as { code?: string };
+  if (!code) return res.status(400).json({ valid: false, error: "No code provided." });
+  try {
+    const coupons = await stripe.coupons.list({ limit: 100 });
+    const match = coupons.data.find(c => c.id.toUpperCase() === code.toUpperCase() && c.valid);
+    if (!match) return res.json({ valid: false, error: "Promo code not found or expired." });
+    const percentOff = match.percent_off ?? (match.amount_off ? null : 0);
+    return res.json({ valid: true, percentOff: percentOff ?? 0, couponId: match.id });
+  } catch (err: unknown) {
+    return res.status(500).json({ valid: false, error: (err as Error).message });
+  }
+});
+
 // ── Cart checkout ─────────────────────────────────────────────────────────────
 app.post("/create-checkout-session", async (req: Request, res: Response) => {
-  const { items, userId, customerName, customerEmail } = req.body;
+  const { items, userId, customerName, customerEmail, promoCode } = req.body;
   try {
+    let couponId: string | undefined;
+    if (promoCode) {
+      try {
+        const coupons = await stripe.coupons.list({ limit: 100 });
+        const match = coupons.data.find(c => c.id.toUpperCase() === promoCode.toUpperCase() && c.valid);
+        if (match) couponId = match.id;
+      } catch { /* proceed without discount */ }
+    }
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -186,6 +209,7 @@ app.post("/create-checkout-session", async (req: Request, res: Response) => {
         },
         quantity: item.quantity || 1,
       })),
+      ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
       success_url: `${CLIENT_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${CLIENT_ORIGIN}/cart`,
     });
@@ -390,9 +414,33 @@ app.get("/api/episodes", async (req: Request, res: Response) => {
 app.post("/api/admin/login", (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Email and password required" });
-  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) return res.status(401).json({ error: "Invalid credentials" });
+  if (email !== ADMIN_EMAIL || password !== runtimeAdminPassword) return res.status(401).json({ error: "Invalid credentials" });
   const token = jwt.sign({ email, role: "admin" }, JWT_SECRET, { expiresIn: "8h" });
   res.json({ token, email });
+});
+
+// ── Admin settings ────────────────────────────────────────────────────────────
+let runtimeAdminPassword = ADMIN_PASSWORD;
+let lowStockThreshold = parseInt(process.env.LOW_STOCK_THRESHOLD || "5");
+
+app.put("/api/admin/settings/password", requireAdmin, (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: "Both passwords required." });
+  if (currentPassword !== runtimeAdminPassword) return res.status(401).json({ error: "Current password is incorrect." });
+  if (newPassword.length < 8) return res.status(400).json({ error: "New password must be at least 8 characters." });
+  runtimeAdminPassword = newPassword;
+  res.json({ ok: true });
+});
+
+app.put("/api/admin/settings/low-stock", requireAdmin, (req: Request, res: Response) => {
+  const { threshold } = req.body as { threshold?: number };
+  if (!threshold || threshold < 1) return res.status(400).json({ error: "Threshold must be at least 1." });
+  lowStockThreshold = threshold;
+  res.json({ ok: true, threshold: lowStockThreshold });
+});
+
+app.get("/api/admin/settings", requireAdmin, (_req: Request, res: Response) => {
+  res.json({ lowStockThreshold });
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -500,6 +548,16 @@ app.put("/api/admin/orders/:id/note", requireAdmin, async (req: Request, res: Re
   res.json(camelize(data));
 });
 
+app.put("/api/admin/orders/:id/tracking", requireAdmin, async (req: Request, res: Response) => {
+  const { tracking_number, carrier } = req.body as { tracking_number?: string; carrier?: string };
+  const update: Row = { tracking_number: tracking_number || null };
+  if (carrier !== undefined) update.tracking_carrier = carrier || null;
+  const { data, error } = await supabase.from("orders").update(update).eq("id", req.params.id).select().single();
+  if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
+  await appendLog("order_tracking", { orderId: req.params.id, tracking_number, carrier });
+  res.json(camelize(data));
+});
+
 // ── Subscribers ───────────────────────────────────────────────────────────────
 app.get("/api/admin/subscribers", requireAdmin, async (_req: Request, res: Response) => {
   const { data, error } = await supabase.from("subscribers").select("*").order("created_at", { ascending: false });
@@ -538,6 +596,33 @@ app.get("/api/admin/activity-log", requireAdmin, async (_req: Request, res: Resp
     .limit(200);
   if (error) return res.status(500).json({ error: error.message });
   res.json(data || []);
+});
+
+// ── Stripe Subscriptions ──────────────────────────────────────────────────────
+app.get("/api/admin/stripe-subscriptions", requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const subs = await stripe.subscriptions.list({ limit: 100, status: "all", expand: ["data.customer"] });
+    const mapped = subs.data.map(s => {
+      const customer = typeof s.customer === "object" && s.customer !== null ? (s.customer as { email?: string; name?: string }) : {};
+      return {
+        id: s.id,
+        status: s.status,
+        email: customer.email || null,
+        name: customer.name || null,
+        planName: s.items.data[0]?.price?.nickname || s.items.data[0]?.price?.id || "—",
+        amount: (s.items.data[0]?.price?.unit_amount || 0) / 100,
+        currency: s.items.data[0]?.price?.currency || "usd",
+        interval: s.items.data[0]?.price?.recurring?.interval || "—",
+        currentPeriodEnd: s.billing_cycle_anchor ? new Date(s.billing_cycle_anchor * 1000).toISOString() : null,
+        cancelAtPeriodEnd: s.cancel_at_period_end,
+        trialEnd: s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null,
+        createdAt: new Date(s.created * 1000).toISOString(),
+      };
+    });
+    res.json(mapped);
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
+  }
 });
 
 // ── Users ─────────────────────────────────────────────────────────────────────

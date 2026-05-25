@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import type { VideoProgress } from '../context/AuthContext';
 import EmptyState from '../components/EmptyState';
 import { API } from '../lib/api';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const YT_API_KEY  = import.meta.env.VITE_YOUTUBE_API_KEY || '';
 const CHANNEL_ID  = 'UCY6m20ZtWVjAtbGqcqTYQng';
@@ -30,6 +31,7 @@ function fmtTime(s: number) {
 }
 
 export default function Home() {
+  usePageMeta(undefined, 'Orthodox Christian stories, songs, and activities for children aged 5–12. Meet Tiggy the lamb and explore the faith together.');
   const [email, setEmail]             = useState('');
   const [ytVideos, setYtVideos]       = useState<YTVideo[]>([]);
   const [ytLoading, setYtLoading]     = useState(true);

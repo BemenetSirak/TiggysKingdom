@@ -8,6 +8,7 @@ import { API as NEWSLETTER_API } from '../lib/api';
 const NAV_LINKS = [
   { label: 'Home',          to: '/'           },
   { label: 'Watch',         to: '/episodes'   },
+  { label: 'Stories',       to: '/stories'    },
   { label: 'Activities',    to: '/activities' },
   { label: 'Prayer Corner', to: '/calendar'   },
   { label: 'Parents',       to: '/subscribe'  },
@@ -27,6 +28,7 @@ const FOOTER_COLS = [
     heading: 'Explore',
     links: [
       { label: 'Watch Episodes',    to: '/episodes'   },
+      { label: 'Stories & Books',   to: '/stories'    },
       { label: 'Activities for Kids', to: '/activities' },
       { label: 'Prayer Corner',     to: '/calendar'   },
       { label: 'Bookshop',          to: '/shop'       },

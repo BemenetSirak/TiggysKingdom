@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { API } from '../lib/api';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { COVER_COLORS, COVER_DARKS } from '../lib/constants';
 
 const STORY_CATEGORIES = ['story', 'saint', 'prayer'];
@@ -27,6 +28,7 @@ interface Product {
 }
 
 export default function Stories() {
+  usePageMeta('Stories & Books', 'Orthodox Christian picture books, saint lives, coloring books, and prayer books for children aged 3–12.');
   const [products, setProducts] = useState<Product[]>([]);
   const [ageFilter, setAgeFilter] = useState<string | null>(null);
   const { addToCart } = useCart();
