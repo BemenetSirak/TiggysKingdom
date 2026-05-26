@@ -11,10 +11,10 @@ const CHANNEL_ID        = 'UCY6m20ZtWVjAtbGqcqTYQng';
 const UPLOADS_PLAYLIST  = CHANNEL_ID.replace(/^UC/, 'UU'); // free playlistItems vs expensive search
 const SEARCH_PAGE_SIZE  = 50;
 const DISPLAY_PAGE_SIZE = 15;
-const YT_CACHE_KEY      = 'tk_yt_lessons_v2';
+const YT_CACHE_KEY      = 'tk_yt_lessons_v3';
 const YT_CACHE_TTL      = 6 * 60 * 60 * 1000; // 6 hours
 
-interface YTCache { ts: number; data: Video[]; nextPageToken: string | null; }
+interface YTCache { ts: number; data: Video[]; }
 function getCachedVideos(): YTCache | null {
   try {
     const s = localStorage.getItem(YT_CACHE_KEY);
@@ -24,8 +24,8 @@ function getCachedVideos(): YTCache | null {
     return cached;
   } catch { return null; }
 }
-function setCachedVideos(videos: Video[], nextPageToken: string | null) {
-  try { localStorage.setItem(YT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: videos, nextPageToken })); } catch {}
+function setCachedVideos(videos: Video[]) {
+  try { localStorage.setItem(YT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: videos })); } catch {}
 }
 
 type Filter = 'all' | 'episodes' | 'shorts';
@@ -430,9 +430,7 @@ export default function Lessons() {
   const [filter, setFilter]             = useState<Filter>('all');
   const [displayCount, setDisplayCount] = useState(DISPLAY_PAGE_SIZE);
   const [loading, setLoading]           = useState(true);
-  const [loadingMore, setLoadingMore]   = useState(false);
   const [error, setError]               = useState<string | null>(null);
-  const nextPageRef                     = useRef<string | null>(null);
 
   const { user, saveVideoProgress, getVideoProgress, addFavorite, removeFavorite, getFavorites } = useAuth();
   const location    = useLocation();
@@ -454,66 +452,69 @@ export default function Lessons() {
     setDisplayCount(c => Math.max(c, neededCount));
   }, [resumeVideoId, allVideos, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchPage = async (pageToken?: string) => {
-    // Serve first page from cache when available, restoring nextPageToken too
-    if (!pageToken) {
-      const cached = getCachedVideos();
-      if (cached) {
-        setAllVideos(cached.data);
-        nextPageRef.current = cached.nextPageToken;
-        setLoading(false);
-        return;
-      }
+  const fetchAllVideos = async () => {
+    const cached = getCachedVideos();
+    if (cached) {
+      setAllVideos(cached.data);
+      setLoading(false);
+      return;
     }
 
-    if (pageToken) setLoadingMore(true); else setLoading(true);
+    setLoading(true);
     setError(null);
+    const collected: Video[] = [];
+    let pageToken: string | undefined;
+    const MAX_PAGES = 10;
+    let page = 0;
     try {
-      // playlistItems costs 1 quota unit vs search's 100
-      let url = `https://www.googleapis.com/youtube/v3/playlistItems?key=${API_KEY}&playlistId=${UPLOADS_PLAYLIST}&part=contentDetails&maxResults=${SEARCH_PAGE_SIZE}`;
-      if (pageToken) url += `&pageToken=${pageToken}`;
-      const sRes  = await fetch(url);
-      const sData = await sRes.json();
-      if (sData.error) {
-        const msg = sData.error.message || '';
-        setError(/quota/i.test(msg)
-          ? 'YouTube video limit reached for today — videos will be back tomorrow. Sorry for the inconvenience!'
-          : msg);
-        return;
-      }
+      do {
+        page++;
+        let url = `https://www.googleapis.com/youtube/v3/playlistItems?key=${API_KEY}&playlistId=${UPLOADS_PLAYLIST}&part=contentDetails&maxResults=${SEARCH_PAGE_SIZE}`;
+        if (pageToken) url += `&pageToken=${pageToken}`;
+        const sRes  = await fetch(url);
+        const sData = await sRes.json();
+        if (sData.error) {
+          const msg = sData.error.message || '';
+          if (collected.length > 0) break;
+          setError(/quota/i.test(msg)
+            ? 'YouTube video limit reached for today — videos will be back tomorrow. Sorry for the inconvenience!'
+            : msg);
+          return;
+        }
+        pageToken = sData.nextPageToken;
+        const items = (sData.items || []) as { contentDetails: { videoId: string } }[];
+        if (!items.length) break;
 
-      nextPageRef.current = sData.nextPageToken || null;
-      const items = (sData.items || []) as { contentDetails: { videoId: string } }[];
-      if (items.length === 0) return;
+        const ids   = items.map(i => i.contentDetails.videoId).join(',');
+        const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?key=${API_KEY}&id=${ids}&part=snippet,contentDetails`);
+        const vData = await vRes.json();
 
-      const ids   = items.map(i => i.contentDetails.videoId).join(',');
-      const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?key=${API_KEY}&id=${ids}&part=snippet,contentDetails`);
-      const vData = await vRes.json();
+        const mapped: Video[] = (vData.items || []).map((v: {
+          id: string;
+          snippet: { title: string; description: string };
+          contentDetails: { duration: string };
+        }) => {
+          const dur     = parseDuration(v.contentDetails?.duration || '');
+          const title   = v.snippet.title || '';
+          const rawDesc = v.snippet.description || '';
+          const desc    = rawDesc.split('\n')[0].slice(0, 180).trim();
+          const isShort = dur <= 60 || /\#shorts/i.test(title + ' ' + rawDesc);
+          return { id: v.id, title, description: desc, isShort };
+        });
 
-      const mapped: Video[] = (vData.items || []).map((v: {
-        id: string;
-        snippet: { title: string; description: string };
-        contentDetails: { duration: string };
-      }) => {
-        const dur     = parseDuration(v.contentDetails?.duration || '');
-        const title   = v.snippet.title || '';
-        const rawDesc = v.snippet.description || '';
-        const desc    = rawDesc.split('\n')[0].slice(0, 180).trim();
-        const isShort = dur <= 60 || /\#shorts/i.test(title + ' ' + rawDesc);
-        return { id: v.id, title, description: desc, isShort };
-      });
+        collected.push(...mapped);
+        setAllVideos([...collected]);
+      } while (pageToken && page < MAX_PAGES);
 
-      if (!pageToken) setCachedVideos(mapped, sData.nextPageToken || null);
-      setAllVideos(prev => pageToken ? [...prev, ...mapped] : mapped);
+      setCachedVideos(collected);
     } catch (err: unknown) {
-      setError((err as Error).message);
+      if (collected.length === 0) setError((err as Error).message);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
-  useEffect(() => { fetchPage(); }, []); // eslint-disable-line
+  useEffect(() => { fetchAllVideos(); }, []); // eslint-disable-line
 
   // Derived lists
   const episodes = allVideos.filter(v => !v.isShort);
@@ -522,15 +523,9 @@ export default function Lessons() {
   const filteredVideos = filter === 'shorts' ? shorts : filter === 'episodes' ? episodes : allVideos;
   // Shorts tab: show all. Episode/All tabs: paginate.
   const visibleVideos  = filter === 'shorts' ? filteredVideos : filteredVideos.slice(0, displayCount);
-  const hasMore        = filter !== 'shorts' && (displayCount < filteredVideos.length || !!nextPageRef.current);
+  const hasMore        = filter !== 'shorts' && displayCount < filteredVideos.length;
 
-  const handleLoadMore = async () => {
-    const next = displayCount + DISPLAY_PAGE_SIZE;
-    setDisplayCount(next);
-    if (next >= filteredVideos.length && nextPageRef.current) {
-      await fetchPage(nextPageRef.current);
-    }
-  };
+  const handleLoadMore = () => setDisplayCount(c => c + DISPLAY_PAGE_SIZE);
 
   const handleProgress = (video: Video, index: number, timestamp: number, duration: number) => {
     if (!user?.id) return;
@@ -555,13 +550,6 @@ export default function Lessons() {
     if (v.isShort && filter === 'all') return { ...v, badge: 'SHORT' };
     return { ...v, badge: undefined as string | undefined };
   });
-
-  // Tab label helpers
-  const tabLabel = (f: Filter) => {
-    if (f === 'all')      return `All${!loading ? ` (${allVideos.length}${nextPageRef.current ? '+' : ''})` : ''}`;
-    if (f === 'episodes') return `Episodes${!loading ? ` (${episodes.length}${nextPageRef.current ? '+' : ''})` : ''}`;
-    return `Shorts${!loading ? ` (${shorts.length})` : ''}`;
-  };
 
   return (
     <div>
@@ -612,7 +600,7 @@ export default function Lessons() {
                   transition: 'all 0.18s',
                 }}
               >
-                {labels[i]}{!loading ? ` (${f === 'all' ? allVideos.length : f === 'episodes' ? episodes.length : shorts.length}${nextPageRef.current && f !== 'shorts' ? '+' : ''})` : ''}
+                {labels[i]}{!loading ? ` (${f === 'all' ? allVideos.length : f === 'episodes' ? episodes.length : shorts.length})` : ''}
               </button>
             );
           })}
@@ -668,8 +656,8 @@ export default function Lessons() {
             </div>
             {hasMore && (
               <div style={{ textAlign: 'center' }}>
-                <button onClick={handleLoadMore} disabled={loadingMore} className="btn-maroon" style={{ opacity: loadingMore ? 0.7 : 1 }}>
-                  {loadingMore ? 'Loading…' : 'Load More'}
+                <button onClick={handleLoadMore} className="btn-maroon">
+                  Load More
                 </button>
               </div>
             )}
