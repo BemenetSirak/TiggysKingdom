@@ -183,16 +183,11 @@ function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: 
           </Link>
         </h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600 }}>{product.author}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-          <span style={{ background: '#DBEAFE', color: '#1D4ED8', borderRadius: '9999px', padding: '0.15rem 0.5rem', fontSize: '0.72rem', fontWeight: 700 }}>
-            Ages {product.ages}
+        {lowStock && (
+          <span style={{ background: '#FEF3C7', color: '#92400E', borderRadius: '9999px', padding: '0.15rem 0.5rem', fontSize: '0.72rem', fontWeight: 800 }}>
+            Only {product.stock} left!
           </span>
-          {lowStock && (
-            <span style={{ background: '#FEF3C7', color: '#92400E', borderRadius: '9999px', padding: '0.15rem 0.5rem', fontSize: '0.72rem', fontWeight: 800 }}>
-              Only {product.stock} left!
-            </span>
-          )}
-        </div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginTop: 'auto', paddingTop: '0.5rem' }}>
           <span style={{ fontSize: '1.25rem', fontWeight: 900, color: outOfStock ? 'var(--text-muted)' : 'var(--maroon)' }}>${product.price.toFixed(2)}</span>
@@ -223,7 +218,7 @@ function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: 
 }
 
 export default function Shop() {
-  usePageMeta('Shop', 'Browse Orthodox children\'s books, coloring books, prayer books, and gift sets — crafted with love for ages 3-12.');
+  usePageMeta('Shop', 'Browse Orthodox children\'s books, coloring books, prayer books, and gift sets — crafted with love for ages 4+.');
 
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState('all');

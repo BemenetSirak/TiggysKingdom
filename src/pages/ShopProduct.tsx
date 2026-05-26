@@ -101,7 +101,7 @@ export default function ShopProduct() {
 
   usePageMeta(
     product ? product.title : 'Product',
-    product ? `${product.title} — ${product.author || ''} · Ages ${product.ages}` : undefined,
+    product ? `${product.title} — ${product.author || ''}` : undefined,
   );
 
   useEffect(() => {
@@ -229,11 +229,6 @@ export default function ShopProduct() {
 
             {/* Tags */}
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {product.ages && (
-                <span style={{ background: '#DBEAFE', color: '#1D4ED8', borderRadius: '9999px', padding: '0.2rem 0.75rem', fontSize: '0.8rem', fontWeight: 700 }}>
-                  Ages {product.ages}
-                </span>
-              )}
               {lowStock && (
                 <span style={{ background: '#FEF3C7', color: '#92400E', borderRadius: '9999px', padding: '0.2rem 0.75rem', fontSize: '0.8rem', fontWeight: 800 }}>
                   Only {product.stock} left!

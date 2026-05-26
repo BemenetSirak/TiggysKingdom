@@ -30,9 +30,9 @@ export interface QuizQuestion {
 
 const DEFAULT_ACTIVITIES: ActivityCard[] = [
   { id: '1', icon: '✏️', title: 'Coloring Pages',    desc: 'Printable scenes of Tiggy, the saints, and the great feasts to color in.',                           tags: ['PDF', 'Ages 4+', 'Free'],  cta: 'Download pack →',  ctaColor: '#C0392B', active: true },
-  { id: '2', icon: '🧠', title: 'Saint Quizzes',      desc: 'Fun, gentle quizzes to test what you remember about your favorite saints.',                           tags: ['Interactive', 'Ages 6+'],  cta: 'Try a quiz →',     ctaColor: '#7C3AED', active: true },
-  { id: '3', icon: '🃏', title: 'Memory Cards',        desc: 'Match the icons and learn the feasts with a classic memory game.',                                    tags: ['Printable', 'Ages 5+'],    cta: 'Print cards →',    ctaColor: '#2E8B57', active: true },
-  { id: '4', icon: '🎮', title: 'Simple Games',        desc: 'Easy, screen-safe games — help Tiggy find the lost sheep and more.',                                  tags: ['Online', 'Ages 5+'],       cta: 'Play now →',       ctaColor: '#2C5FA0', active: true },
+  { id: '2', icon: '🧠', title: 'Saint Quizzes',      desc: 'Fun, gentle quizzes to test what you remember about your favorite saints.',                           tags: ['Interactive', 'Ages 4+'],  cta: 'Try a quiz →',     ctaColor: '#7C3AED', active: true },
+  { id: '3', icon: '🃏', title: 'Memory Cards',        desc: 'Match the icons and learn the feasts with a classic memory game.',                                    tags: ['Printable', 'Ages 4+'],    cta: 'Print cards →',    ctaColor: '#2E8B57', active: true },
+  { id: '4', icon: '🎮', title: 'Simple Games',        desc: 'Easy, screen-safe games — help Tiggy find the lost sheep and more.',                                  tags: ['Online', 'Ages 4+'],       cta: 'Play now →',       ctaColor: '#2C5FA0', active: true },
   { id: '5', icon: '✂️', title: 'Printable Crafts',   desc: 'Paper icons, feast-day garlands, and prayer-corner decorations to make.',                             tags: ['PDF', 'With grown-up'],    cta: 'Get crafts →',     ctaColor: '#D4691D', active: true },
   { id: '6', icon: '🎨', title: 'Draw with Tiggy',     desc: 'Follow along, step by step, and learn to draw Tiggy and her friends.',                                tags: ['Video', 'All ages'],       cta: 'Start drawing →',  ctaColor: '#C0392B', active: true },
 ];

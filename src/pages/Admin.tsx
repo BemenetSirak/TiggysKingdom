@@ -219,14 +219,14 @@ function ProductsTab({ toast }: { toast: ToastFn }) {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<AdminProduct | null>(null);
-  const [form, setForm] = useState({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4-8', stock: 20, badge: '', active: true });
+  const [form, setForm] = useState({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4+', stock: 20, badge: '', active: true });
   const [editStockId, setEditStockId] = useState<number | null>(null);
   const [editStockVal, setEditStockVal] = useState('');
 
   const load = useCallback(() => apiFetch('/api/admin/products').then(setProducts), []);
   useEffect(() => { load(); }, [load]);
 
-  const openAdd  = () => { setEditing(null); setForm({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4-8', stock: 20, badge: '', active: true }); setShowForm(true); };
+  const openAdd  = () => { setEditing(null); setForm({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4+', stock: 20, badge: '', active: true }); setShowForm(true); };
   const openEdit = (p: AdminProduct) => { setEditing(p); setForm({ title: p.title, author: p.author || '', price: String(p.price), originalPrice: p.originalPrice ? String(p.originalPrice) : '', category: p.category, ages: p.ages || '4-8', stock: p.stock, badge: p.badge || '', active: p.active ?? true }); setShowForm(true); };
 
   const handleSave = async (e: FormEvent) => {
@@ -832,12 +832,12 @@ function EpisodesTab({ toast }: { toast: ToastFn }) {
   const [eps, setEps] = useState<AdminEpisode[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<AdminEpisode | null>(null);
-  const [form, setForm] = useState({ videoId: '', title: '', description: '', ages: '4-8', category: 'general', featured: false, order: 1 });
+  const [form, setForm] = useState({ videoId: '', title: '', description: '', ages: '4+', category: 'general', featured: false, order: 1 });
 
   const load = useCallback(() => apiFetch('/api/admin/episodes').then(d => setEps(Array.isArray(d) ? d : [])), []);
   useEffect(() => { load(); }, [load]);
 
-  const openAdd  = () => { setEditing(null); setForm({ videoId: '', title: '', description: '', ages: '4-8', category: 'general', featured: false, order: (eps.length + 1) }); setShowForm(true); };
+  const openAdd  = () => { setEditing(null); setForm({ videoId: '', title: '', description: '', ages: '4+', category: 'general', featured: false, order: (eps.length + 1) }); setShowForm(true); };
   const openEdit = (e: AdminEpisode) => { setEditing(e); setForm({ videoId: e.videoId, title: e.title, description: e.description || '', ages: e.ages || '4-8', category: e.category || 'general', featured: e.featured ?? false, order: e.order ?? 1 }); setShowForm(true); };
 
   const handleSave = async (ev: FormEvent) => {
@@ -874,7 +874,7 @@ function EpisodesTab({ toast }: { toast: ToastFn }) {
           <div style={{ background: 'white', borderRadius: '1.25rem', padding: '2rem', width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ margin: '0 0 1.5rem', color: 'var(--maroon)' }}>{editing ? 'Edit Episode' : 'New Episode'}</h3>
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              {[['videoId', 'YouTube Video ID', 'text'], ['title', 'Episode Title', 'text'], ['description', 'Description', 'text'], ['ages', 'Age Range (e.g. 4-8)', 'text'], ['order', 'Display Order', 'number']].map(([key, label, type]) => (
+              {[['videoId', 'YouTube Video ID', 'text'], ['title', 'Episode Title', 'text'], ['description', 'Description', 'text'], ['ages', 'Age Range (e.g. 4+)', 'text'], ['order', 'Display Order', 'number']].map(([key, label, type]) => (
                 <div key={key}>
                   <label style={{ display: 'block', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{label}</label>
                   <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={inputStyle} required={key === 'title'} />
@@ -1071,9 +1071,9 @@ function useLocalStore<T extends { id: string; active?: boolean }>(key: string, 
 // Import default arrays from the public pages for seeding
 const ACTIVITY_DEFAULTS: ActivityCard[] = [
   { id: '1', icon: '✏️', title: 'Coloring Pages',   desc: 'Printable scenes of Tiggy, the saints, and the great feasts to color in.',       tags: ['PDF','Ages 4+','Free'], cta: 'Download pack →', ctaColor: '#C0392B', active: true },
-  { id: '2', icon: '🧠', title: 'Saint Quizzes',     desc: 'Fun, gentle quizzes to test what you remember about your favorite saints.',       tags: ['Interactive','Ages 6+'], cta: 'Try a quiz →', ctaColor: '#7C3AED', active: true },
-  { id: '3', icon: '🃏', title: 'Memory Cards',      desc: 'Match the icons and learn the feasts with a classic memory game.',                tags: ['Printable','Ages 5+'], cta: 'Print cards →', ctaColor: '#2E8B57', active: true },
-  { id: '4', icon: '🎮', title: 'Simple Games',      desc: 'Easy, screen-safe games — help Tiggy find the lost sheep and more.',              tags: ['Online','Ages 5+'], cta: 'Play now →', ctaColor: '#2C5FA0', active: true },
+  { id: '2', icon: '🧠', title: 'Saint Quizzes',     desc: 'Fun, gentle quizzes to test what you remember about your favorite saints.',       tags: ['Interactive','Ages 4+'], cta: 'Try a quiz →', ctaColor: '#7C3AED', active: true },
+  { id: '3', icon: '🃏', title: 'Memory Cards',      desc: 'Match the icons and learn the feasts with a classic memory game.',                tags: ['Printable','Ages 4+'], cta: 'Print cards →', ctaColor: '#2E8B57', active: true },
+  { id: '4', icon: '🎮', title: 'Simple Games',      desc: 'Easy, screen-safe games — help Tiggy find the lost sheep and more.',              tags: ['Online','Ages 4+'], cta: 'Play now →', ctaColor: '#2C5FA0', active: true },
   { id: '5', icon: '✂️', title: 'Printable Crafts',  desc: 'Paper icons, feast-day garlands, and prayer-corner decorations to make.',        tags: ['PDF','With grown-up'], cta: 'Get crafts →', ctaColor: '#D4691D', active: true },
   { id: '6', icon: '🎨', title: 'Draw with Tiggy',   desc: 'Follow along, step by step, and learn to draw Tiggy and her friends.',           tags: ['Video','All ages'], cta: 'Start drawing →', ctaColor: '#C0392B', active: true },
 ];

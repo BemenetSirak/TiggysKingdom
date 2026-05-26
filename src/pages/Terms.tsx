@@ -25,7 +25,7 @@ export default function Terms() {
           },
           {
             title: '2. Use of the Service',
-            body: `Tiggy's Kingdom is an educational platform designed for children ages 4–12 and their families. You agree to use the Service only for lawful purposes and in a manner consistent with our community values of faith, respect, and love.`,
+            body: `Tiggy's Kingdom is an educational platform designed for children ages 4 and above and their families. You agree to use the Service only for lawful purposes and in a manner consistent with our community values of faith, respect, and love.`,
           },
           {
             title: '3. User Accounts',

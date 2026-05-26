@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -11,24 +11,93 @@ const CHANNEL_ID        = 'UCY6m20ZtWVjAtbGqcqTYQng';
 const UPLOADS_PLAYLIST  = CHANNEL_ID.replace(/^UC/, 'UU'); // free playlistItems vs expensive search
 const SEARCH_PAGE_SIZE  = 50;
 const DISPLAY_PAGE_SIZE = 15;
-const YT_CACHE_KEY      = 'tk_yt_lessons_v3';
-const YT_CACHE_TTL      = 6 * 60 * 60 * 1000; // 6 hours
+const YT_CACHE_KEY      = 'tk_yt_lessons_v6';
+const YT_CACHE_TTL      = 6 * 60 * 60 * 1000;  // 6 hours
+const PL_CACHE_KEY      = 'tk_yt_playlists_v1';
+const PL_CACHE_TTL      = 12 * 60 * 60 * 1000; // 12 hours
 
+// ── Video cache ───────────────────────────────────────────────────────────────
 interface YTCache { ts: number; data: Video[]; }
 function getCachedVideos(): YTCache | null {
   try {
     const s = localStorage.getItem(YT_CACHE_KEY);
     if (!s) return null;
-    const cached = JSON.parse(s) as YTCache;
-    if (Date.now() - cached.ts > YT_CACHE_TTL) { localStorage.removeItem(YT_CACHE_KEY); return null; }
-    return cached;
+    const c = JSON.parse(s) as YTCache;
+    if (Date.now() - c.ts > YT_CACHE_TTL) { localStorage.removeItem(YT_CACHE_KEY); return null; }
+    return c;
   } catch { return null; }
 }
 function setCachedVideos(videos: Video[]) {
   try { localStorage.setItem(YT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: videos })); } catch {}
 }
 
-type Filter = 'all' | 'episodes' | 'shorts';
+// ── Playlist cache ────────────────────────────────────────────────────────────
+export interface PlaylistMeta { id: string; title: string; }
+interface YTPlaylistCache { ts: number; playlists: PlaylistMeta[]; videoMap: Record<string, string[]>; }
+function getCachedPlaylists(): YTPlaylistCache | null {
+  try {
+    const s = localStorage.getItem(PL_CACHE_KEY);
+    if (!s) return null;
+    const c = JSON.parse(s) as YTPlaylistCache;
+    if (Date.now() - c.ts > PL_CACHE_TTL) { localStorage.removeItem(PL_CACHE_KEY); return null; }
+    return c;
+  } catch { return null; }
+}
+function setCachedPlaylists(data: YTPlaylistCache) {
+  try { localStorage.setItem(PL_CACHE_KEY, JSON.stringify(data)); } catch {}
+}
+
+async function fetchPlaylistData(): Promise<YTPlaylistCache | null> {
+  const cached = getCachedPlaylists();
+  if (cached) return cached;
+  try {
+    const pRes  = await fetch(`https://www.googleapis.com/youtube/v3/playlists?channelId=${CHANNEL_ID}&part=snippet&maxResults=50&key=${API_KEY}`);
+    const pData = await pRes.json();
+    if (pData.error) return null;
+
+    const playlists: PlaylistMeta[] = (pData.items || []).map((p: { id: string; snippet: { title: string } }) => ({
+      id: p.id, title: p.snippet.title,
+    }));
+
+    const videoMap: Record<string, string[]> = {};
+    for (const pl of playlists) {
+      let pageToken: string | undefined;
+      do {
+        let url = `https://www.googleapis.com/youtube/v3/playlistItems?playlistId=${pl.id}&part=contentDetails&maxResults=50&key=${API_KEY}`;
+        if (pageToken) url += `&pageToken=${pageToken}`;
+        const iRes  = await fetch(url);
+        const iData = await iRes.json();
+        if (iData.error) break;
+        pageToken = iData.nextPageToken;
+        for (const item of (iData.items || [])) {
+          const vid = item.contentDetails?.videoId as string | undefined;
+          if (vid) {
+            if (!videoMap[vid]) videoMap[vid] = [];
+            if (!videoMap[vid].includes(pl.title)) videoMap[vid].push(pl.title);
+          }
+        }
+      } while (pageToken);
+    }
+
+    const result: YTPlaylistCache = { ts: Date.now(), playlists, videoMap };
+    setCachedPlaylists(result);
+    return result;
+  } catch { return null; }
+}
+
+// ── Playlist icon inference ───────────────────────────────────────────────────
+function playlistIcon(title: string): string {
+  const t = title.toLowerCase();
+  if (/saint|holy|martyr|apostle|theotokos/.test(t)) return '✝';
+  if (/feast|nativity|pascha|christmas|theophany|transfiguration|dormition|pentecost|ascension/.test(t)) return '🕯';
+  if (/parable/.test(t)) return '📖';
+  if (/song|hymn|sing|chant/.test(t)) return '♪';
+  if (/prayer|pray/.test(t)) return '🙏';
+  if (/bible|scripture|testament/.test(t)) return '📜';
+  return '✦';
+}
+
+type Filter = string; // 'all' | 'shorts' | playlist title
 
 interface Video {
   id: string;
@@ -247,7 +316,6 @@ function EpisodeCard({ video, index, badge, savedProgress, isResuming, isFavorit
           </p>
         )}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '0.25rem' }}>
-          <span style={{ background: '#DBEAFE', color: '#1D4ED8', borderRadius: '9999px', padding: '0.15rem 0.5rem', fontSize: '0.72rem', fontWeight: 700 }}>Ages 4-12</span>
           <span style={{ color: '#F5C842', fontSize: '0.8rem' }}>★★★★★</span>
           {ts > 0 && (
             <span style={{ background: '#FEF3C7', color: '#C9922A', borderRadius: '9999px', padding: '0.15rem 0.5rem', fontSize: '0.72rem', fontWeight: 700, marginLeft: 'auto' }}>
@@ -290,7 +358,7 @@ function EpisodeCard({ video, index, badge, savedProgress, isResuming, isFavorit
 
 // ── Short card — portrait grid card used in Shorts tab ───────────────────────
 // Three states:
-//   'idle'       → shows thumbnail, click to go inline
+//   'idle'       → thumbnail + title strip below, click to go inline
 //   'inline'     → portrait player inside the card, ⛶ button → fullscreen
 //   'fullscreen' → fixed viewport overlay with correctly-sized portrait player
 function ShortCard({ video }: { video: Video }) {
@@ -304,60 +372,20 @@ function ShortCard({ video }: { video: Video }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [state]);
 
-  // Thumbnail shared between idle and inline states
-  const Thumbnail = (
-    <div style={{ position: 'relative', paddingTop: '177.78%', overflow: 'hidden' }}>
-      <img
-        src={`https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
-        alt={video.title}
-        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
-        onError={e => { (e.currentTarget as HTMLImageElement).src = `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`; }}
-      />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 38%, rgba(0,0,0,0.1) 65%, transparent 100%)' }} />
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 14px rgba(0,0,0,0.45)' }}>
-          <span style={{ color: 'var(--maroon)', fontSize: '1.1rem', marginLeft: '4px' }}>▶</span>
-        </div>
-      </div>
-      <span style={{ position: 'absolute', top: 8, left: 8, background: '#EF4444', color: 'white', borderRadius: '0.35rem', padding: '0.18rem 0.55rem', fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.04em', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
-        SHORT
-      </span>
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.875rem 0.75rem 0.8rem' }}>
-        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 1px 6px rgba(0,0,0,0.7)', letterSpacing: '0.01em' }}>
-          {video.title}
-        </p>
-      </div>
-    </div>
-  );
-
   return (
     <>
-      {/* ── Fullscreen overlay — position:fixed so it covers the viewport ── */}
+      {/* ── Fullscreen overlay ── */}
       {state === 'fullscreen' && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setState('idle')}
         >
-          {/*
-            Portrait video sizing that fits any screen without clipping:
-            - width  = min(100vh × 9/16, 100vw)  → at most the screen width
-            - height = min(100vw × 16/9, 100vh)  → at most the screen height
-            On landscape desktops: slim pillar centered in black
-            On portrait phones:    fills the screen
-          */}
           <div
-            style={{
-              width:  'min(calc(100vh * 9 / 16), 100vw)',
-              height: 'min(calc(100vw * 16 / 9), 100vh)',
-              position: 'relative',
-              background: '#000',
-            }}
+            style={{ width: 'min(calc(100vh * 9 / 16), 100vw)', height: 'min(calc(100vw * 16 / 9), 100vh)', position: 'relative', background: '#000' }}
             onClick={e => e.stopPropagation()}
           >
             <VideoEmbed videoId={video.id} startSeconds={0} onProgress={() => {}} mode="fill" />
           </div>
-
-          {/* Close button */}
           <button
             onClick={e => { e.stopPropagation(); setState('idle'); }}
             aria-label="Close fullscreen"
@@ -370,29 +398,83 @@ function ShortCard({ video }: { video: Video }) {
 
       {/* ── Card ── */}
       <div
-        style={{ borderRadius: '1rem', overflow: 'hidden', background: '#111', cursor: state === 'inline' ? 'default' : 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}
+        className="card"
+        style={{
+          borderRadius: '1rem',
+          overflow: 'hidden',
+          background: 'white',
+          cursor: state === 'inline' ? 'default' : 'pointer',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 0,
+        }}
         onClick={state === 'idle' ? () => setState('inline') : undefined}
-        onMouseEnter={e => { if (state === 'idle') { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)'; } }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+        onMouseEnter={e => { if (state === 'idle') { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.18)'; } }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}
       >
         {state === 'inline' ? (
           <>
             <VideoEmbed videoId={video.id} startSeconds={0} onProgress={() => {}} mode="portrait" />
-            <div style={{ padding: '0.6rem 0.75rem', background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <p style={{ flex: 1, color: 'white', fontWeight: 700, fontSize: '0.78rem', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ padding: '0.65rem 0.875rem', background: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <p style={{ flex: 1, color: 'var(--text-primary)', fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '0.82rem', margin: 0, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {video.title}
               </p>
               <button
                 onClick={e => { e.stopPropagation(); setState('fullscreen'); }}
                 title="Fullscreen"
-                style={{ flexShrink: 0, background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, backdropFilter: 'blur(4px)', lineHeight: 1 }}
+                style={{ flexShrink: 0, background: 'var(--cream-dark)', border: 'none', color: 'var(--text-secondary)', borderRadius: '0.4rem', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, lineHeight: 1 }}
               >
                 ⛶
               </button>
             </div>
           </>
         ) : (
-          Thumbnail
+          <>
+            {/* Thumbnail */}
+            <div style={{ position: 'relative', paddingTop: '177.78%', overflow: 'hidden', borderRadius: '0.875rem 0.875rem 0 0' }}>
+              <img
+                src={`https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
+                alt={video.title}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+                onError={e => { (e.currentTarget as HTMLImageElement).src = `https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`; }}
+              />
+              {/* light vignette for play button legibility only */}
+              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.3) 100%)' }} />
+              {/* play button */}
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(0,0,0,0.4)' }}>
+                  <span style={{ color: 'var(--maroon)', fontSize: '1.15rem', marginLeft: '5px' }}>▶</span>
+                </div>
+              </div>
+              {/* SHORT badge */}
+              <span style={{ position: 'absolute', top: 8, left: 8, background: '#EF4444', color: 'white', borderRadius: '0.35rem', padding: '0.18rem 0.55rem', fontSize: '0.62rem', fontWeight: 900, letterSpacing: '0.06em', boxShadow: '0 1px 5px rgba(0,0,0,0.4)' }}>
+                SHORT
+              </span>
+              {/* tap hint */}
+              <span style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,0.85)', borderRadius: '9999px', padding: '0.2rem 0.55rem', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.04em' }}>
+                TAP TO PLAY
+              </span>
+            </div>
+
+            {/* Title strip */}
+            <div style={{ padding: '0.625rem 0.875rem 0.75rem', background: 'white' }}>
+              <p style={{
+                color: 'var(--text-primary)',
+                fontFamily: 'Nunito, sans-serif',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                margin: 0,
+                lineHeight: 1.4,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}>
+                {video.title}
+              </p>
+            </div>
+          </>
         )}
       </div>
     </>
@@ -424,9 +506,12 @@ function ShortSkeleton() {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Lessons() {
-  usePageMeta('Episodes', 'Watch animated Orthodox faith adventures with Tiggy the Lamb — new episodes every week for ages 4-12.');
+  usePageMeta('Episodes', 'Watch animated Orthodox faith adventures with Tiggy the Lamb — new episodes every week for ages 4+.');
 
   const [allVideos, setAllVideos]       = useState<Video[]>([]);
+  const [playlists, setPlaylists]             = useState<PlaylistMeta[]>([]);
+  const [playlistMap, setPlaylistMap]         = useState<Record<string, string[]>>({});
+  const [shortsPlaylistTitle, setShortsPlaylistTitle] = useState<string | null>(null);
   const [filter, setFilter]             = useState<Filter>('all');
   const [displayCount, setDisplayCount] = useState(DISPLAY_PAGE_SIZE);
   const [loading, setLoading]           = useState(true);
@@ -443,12 +528,12 @@ export default function Lessons() {
   useEffect(() => {
     if (!resumeVideoId || loading || allVideos.length === 0) return;
     const target = allVideos.find(v => v.id === resumeVideoId);
-    if (!target || target.isShort) return; // shorts don't support resume
-    const pool = target.isShort ? allVideos.filter(v => v.isShort) : allVideos.filter(v => !v.isShort);
+    if (!target || videoIsShort(target)) return; // shorts don't support resume
+    const pool = allVideos.filter(v => !videoIsShort(v));
     const posInPool = pool.findIndex(v => v.id === resumeVideoId);
     if (posInPool === -1) return;
     const neededCount = posInPool + 1;
-    if (filter === 'shorts') setFilter('episodes');
+    if (filter === 'shorts') setFilter('all');
     setDisplayCount(c => Math.max(c, neededCount));
   }, [resumeVideoId, allVideos, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -498,7 +583,8 @@ export default function Lessons() {
           const title   = v.snippet.title || '';
           const rawDesc = v.snippet.description || '';
           const desc    = rawDesc.split('\n')[0].slice(0, 180).trim();
-          const isShort = dur <= 60 || /\#shorts/i.test(title + ' ' + rawDesc);
+          // Duration-only fallback; playlist membership overrides this once loaded
+          const isShort = dur > 0 && dur <= 60;
           return { id: v.id, title, description: desc, isShort };
         });
 
@@ -514,16 +600,41 @@ export default function Lessons() {
     }
   };
 
-  useEffect(() => { fetchAllVideos(); }, []); // eslint-disable-line
+  useEffect(() => {
+    fetchAllVideos();
+    fetchPlaylistData().then(data => {
+      if (!data) return;
+      const shortsP = data.playlists.find(p => /^#?shorts$/i.test(p.title.trim()));
+      setShortsPlaylistTitle(shortsP?.title ?? null);
+      // Keep Shorts playlist out of the category tabs (handled separately)
+      setPlaylists(data.playlists.filter(p => !/^#?shorts$/i.test(p.title.trim())));
+      setPlaylistMap(data.videoMap);
+    });
+  }, []); // eslint-disable-line
+
+  // Use the channel's Shorts playlist as ground truth; fall back to duration when unavailable
+  const videoIsShort = (v: Video): boolean =>
+    shortsPlaylistTitle
+      ? (playlistMap[v.id] || []).includes(shortsPlaylistTitle)
+      : v.isShort;
 
   // Derived lists
-  const episodes = allVideos.filter(v => !v.isShort);
-  const shorts   = allVideos.filter(v => v.isShort);
+  const shorts = allVideos.filter(videoIsShort);
 
-  const filteredVideos = filter === 'shorts' ? shorts : filter === 'episodes' ? episodes : allVideos;
-  // Shorts tab: show all. Episode/All tabs: paginate.
-  const visibleVideos  = filter === 'shorts' ? filteredVideos : filteredVideos.slice(0, displayCount);
-  const hasMore        = filter !== 'shorts' && displayCount < filteredVideos.length;
+  // Count videos (from allVideos) per playlist for tab badges
+  const catCounts: Record<string, number> = { all: allVideos.length, shorts: shorts.length };
+  for (const v of allVideos) {
+    for (const title of (playlistMap[v.id] || [])) {
+      catCounts[title] = (catCounts[title] || 0) + 1;
+    }
+  }
+
+  const filteredVideos = filter === 'all'    ? allVideos
+                       : filter === 'shorts' ? allVideos.filter(videoIsShort)
+                       : allVideos.filter(v => (playlistMap[v.id] || []).includes(filter));
+
+  const visibleVideos = filter === 'shorts' ? filteredVideos : filteredVideos.slice(0, displayCount);
+  const hasMore       = filter !== 'shorts' && displayCount < filteredVideos.length;
 
   const handleLoadMore = () => setDisplayCount(c => c + DISPLAY_PAGE_SIZE);
 
@@ -540,16 +651,10 @@ export default function Lessons() {
     else { addFavorite(user.id, { id: video.id, title: video.title }); }
   };
 
-  // Compute episode number label only for Episodes tab
-  let epNumCounter = 0;
-  const videosWithBadge = visibleVideos.map(v => {
-    if (filter === 'episodes' && !v.isShort) {
-      epNumCounter++;
-      return { ...v, badge: `Ep. ${epNumCounter}` };
-    }
-    if (v.isShort && filter === 'all') return { ...v, badge: 'SHORT' };
-    return { ...v, badge: undefined as string | undefined };
-  });
+  const videosWithBadge = visibleVideos.map(v => ({
+    ...v,
+    badge: videoIsShort(v) ? 'SHORT' : undefined as string | undefined,
+  }));
 
   return (
     <div>
@@ -578,33 +683,56 @@ export default function Lessons() {
           <GuestBanner message="Sign in to save your watch progress, favorite episodes, and pick up right where you left off." />
         )}
 
-        {/* ── Filter tabs ── */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '2.5rem', justifyContent: 'center' }}>
-          {(['all', 'episodes', 'shorts'] as Filter[]).map((f, i) => {
-            const labels = ['All Stories', 'Episodes', 'Shorts'];
-            const active = filter === f;
-            return (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                style={{
-                  padding: '0.5rem 1.25rem',
-                  borderRadius: '9999px',
-                  border: '2px solid transparent',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  background: active ? '#1B2A4A' : 'white',
-                  color: active ? 'white' : 'var(--text-secondary)',
-                  boxShadow: active ? '0 2px 8px rgba(27,42,74,0.25)' : '0 1px 4px rgba(0,0,0,0.08)',
-                  transition: 'all 0.18s',
-                }}
-              >
-                {labels[i]}{!loading ? ` (${f === 'all' ? allVideos.length : f === 'episodes' ? episodes.length : shorts.length})` : ''}
-              </button>
-            );
-          })}
-        </div>
+        {/* ── Category filter tabs (driven by real YouTube playlists) ── */}
+        {(() => {
+          // Build tab list: All + channel playlists (those with ≥1 matching video) + Shorts
+          const tabs: { key: string; label: string; icon: string }[] = [
+            { key: 'all', label: 'All Stories', icon: '✦' },
+            ...playlists
+              .filter(p => (catCounts[p.title] || 0) > 0)
+              .map(p => ({ key: p.title, label: p.title, icon: playlistIcon(p.title) })),
+            ...(catCounts['shorts'] > 0 ? [{ key: 'shorts', label: 'Shorts', icon: '⚡' }] : []),
+          ];
+          return (
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.375rem', marginBottom: '2rem', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
+              {tabs.map(({ key, label, icon }) => {
+                const active = filter === key;
+                const count  = catCounts[key] ?? 0;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => { setFilter(key); setDisplayCount(DISPLAY_PAGE_SIZE); }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      padding: '0.45rem 1rem',
+                      borderRadius: '9999px',
+                      border: active ? '2px solid #1B2A4A' : '2px solid transparent',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      background: active ? '#1B2A4A' : 'white',
+                      color: active ? 'white' : 'var(--text-secondary)',
+                      boxShadow: active ? '0 2px 8px rgba(27,42,74,0.25)' : '0 1px 4px rgba(0,0,0,0.08)',
+                      transition: 'all 0.18s',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.9em', opacity: active ? 1 : 0.75 }}>{icon}</span>
+                    {label}
+                    {!loading && count > 0 && (
+                      <span style={{ background: active ? 'rgba(255,255,255,0.2)' : 'var(--cream-dark)', color: active ? 'white' : 'var(--text-muted)', borderRadius: '9999px', padding: '0.05rem 0.45rem', fontSize: '0.72rem', fontWeight: 800 }}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* ── Error ── */}
         {error && !loading && (
@@ -621,7 +749,7 @@ export default function Lessons() {
           </div>
         )}
         {loading && filter === 'shorts' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.875rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {[...Array(8)].map((_, i) => <ShortSkeleton key={i} />)}
           </div>
         )}
@@ -629,10 +757,8 @@ export default function Lessons() {
         {/* ── Empty ── */}
         {!loading && !error && filteredVideos.length === 0 && (
           <EmptyState
-            title={filter === 'shorts' ? 'No shorts yet' : 'No episodes found'}
-            message={filter === 'shorts'
-              ? 'Short clips will appear here as they are published to the channel.'
-              : 'Check back soon — new animated adventures from Tiggy\'s Kingdom are on the way!'}
+            title={filter === 'shorts' ? 'No shorts yet' : filter === 'all' ? 'No videos yet' : `No "${filter}" videos yet`}
+            message="Check back soon — new stories from Tiggy's Kingdom are on the way!"
           />
         )}
 
@@ -666,7 +792,7 @@ export default function Lessons() {
 
         {/* ── Shorts grid (9:16 portrait) ── */}
         {!loading && filter === 'shorts' && shorts.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.875rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
             {shorts.map(video => <ShortCard key={video.id} video={video} />)}
           </div>
         )}

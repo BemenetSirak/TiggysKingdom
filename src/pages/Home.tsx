@@ -57,7 +57,7 @@ function fmtTime(s: number) {
 }
 
 export default function Home() {
-  usePageMeta(undefined, 'Orthodox Christian stories, songs, and activities for children aged 5–12. Meet Tiggy the lamb and explore the faith together.');
+  usePageMeta(undefined, 'Orthodox Christian stories, songs, and activities for children ages 4 and above. Meet Tiggy the lamb and explore the faith together.');
   const [email, setEmail]             = useState('');
   const [ytVideos, setYtVideos]       = useState<YTVideo[]>([]);
   const [ytLoading, setYtLoading]     = useState(true);
@@ -147,7 +147,7 @@ export default function Home() {
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'center' }}>
           <div>
             <span style={{ display: 'inline-block', background: 'var(--gold-pale)', color: 'var(--gold-dark)', fontWeight: 800, fontSize: '0.8rem', padding: '0.35rem 1rem', borderRadius: '9999px', marginBottom: '1.5rem', letterSpacing: '0.03em' }}>
-              Orthodox stories for ages 5–12
+              Orthodox stories for ages 4+
             </span>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', lineHeight: 1.05, margin: '0 0 1rem', color: 'var(--text-primary)', fontWeight: 700 }}>
               Meet <span style={{ color: '#D4691D' }}>Tiggy</span>, the<br />little lamb who<br />loves <span style={{ color: '#3A7A30' }}>God</span>!
@@ -272,7 +272,7 @@ export default function Home() {
                       <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '1rem', margin: '0 0 0.625rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{v.title}</h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.875rem' }}>
                         <span style={{ color: '#F5C842', fontSize: '0.85rem' }}>★★★★★</span>
-                        <span style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '9999px' }}>Ages 5+</span>
+                        <span style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '9999px' }}>Ages 4+</span>
                       </div>
                       {isPlaying ? (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
