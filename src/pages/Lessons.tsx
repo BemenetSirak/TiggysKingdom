@@ -14,17 +14,18 @@ const DISPLAY_PAGE_SIZE = 15;
 const YT_CACHE_KEY      = 'tk_yt_lessons_v2';
 const YT_CACHE_TTL      = 6 * 60 * 60 * 1000; // 6 hours
 
-function getCachedVideos(): Video[] | null {
+interface YTCache { ts: number; data: Video[]; nextPageToken: string | null; }
+function getCachedVideos(): YTCache | null {
   try {
     const s = localStorage.getItem(YT_CACHE_KEY);
     if (!s) return null;
-    const { ts, data } = JSON.parse(s);
-    if (Date.now() - ts > YT_CACHE_TTL) { localStorage.removeItem(YT_CACHE_KEY); return null; }
-    return data as Video[];
+    const cached = JSON.parse(s) as YTCache;
+    if (Date.now() - cached.ts > YT_CACHE_TTL) { localStorage.removeItem(YT_CACHE_KEY); return null; }
+    return cached;
   } catch { return null; }
 }
-function setCachedVideos(videos: Video[]) {
-  try { localStorage.setItem(YT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: videos })); } catch {}
+function setCachedVideos(videos: Video[], nextPageToken: string | null) {
+  try { localStorage.setItem(YT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: videos, nextPageToken })); } catch {}
 }
 
 type Filter = 'all' | 'episodes' | 'shorts';
@@ -454,10 +455,15 @@ export default function Lessons() {
   }, [resumeVideoId, allVideos, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPage = async (pageToken?: string) => {
-    // Serve first page from cache when available
+    // Serve first page from cache when available, restoring nextPageToken too
     if (!pageToken) {
       const cached = getCachedVideos();
-      if (cached) { setAllVideos(cached); setLoading(false); return; }
+      if (cached) {
+        setAllVideos(cached.data);
+        nextPageRef.current = cached.nextPageToken;
+        setLoading(false);
+        return;
+      }
     }
 
     if (pageToken) setLoadingMore(true); else setLoading(true);
@@ -497,7 +503,7 @@ export default function Lessons() {
         return { id: v.id, title, description: desc, isShort };
       });
 
-      if (!pageToken) setCachedVideos(mapped);
+      if (!pageToken) setCachedVideos(mapped, sData.nextPageToken || null);
       setAllVideos(prev => pageToken ? [...prev, ...mapped] : mapped);
     } catch (err: unknown) {
       setError((err as Error).message);
