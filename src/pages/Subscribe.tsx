@@ -124,8 +124,115 @@ export default function Subscribe() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
+      {/* ── Subscription Plans ── */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>CHOOSE YOUR PLAN</p>
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 0.5rem', color: '#1B2A4A' }}>Simple, faithful access for your family</h2>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 auto 2.5rem', maxWidth: 480, lineHeight: 1.6 }}>
+            No ads, no surprises — just Orthodox stories your children will love.
+          </p>
+
+          <div style={{ overflowX: 'auto', borderRadius: '1.25rem', boxShadow: '0 4px 32px rgba(107,32,32,0.08)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680, background: 'white', borderRadius: '1.25rem', overflow: 'hidden' }}>
+              <thead>
+                <tr>
+                  {/* empty label cell */}
+                  <th style={{ background: 'white', padding: '1.5rem 1.25rem', width: '22%', borderBottom: '1px solid #EDE8DF' }} />
+
+                  {/* Free */}
+                  <th style={{ background: 'white', padding: '1.75rem 1rem 1.5rem', textAlign: 'center', borderBottom: '1px solid #EDE8DF', borderLeft: '1px solid #EDE8DF' }}>
+                    <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 0.75rem', borderRadius: '50%', background: '#F0EBE0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      <img src="/tiggy.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'grayscale(0.25) brightness(0.95)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
+                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Free</p>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$0</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
+                    </div>
+                    <button className="btn-outline-maroon" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Get Started</button>
+                  </th>
+
+                  {/* Kingdom Lamb */}
+                  <th style={{ background: '#FFF8ED', padding: '1.75rem 1rem 1.5rem', textAlign: 'center', borderBottom: '1px solid #EDE8DF', borderLeft: '1px solid #EDE8DF', position: 'relative' }}>
+                    <span style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #C9A227, #F5C842)', color: '#1B2A4A', borderRadius: '0 0 0.75rem 0.75rem', padding: '0.2rem 0.875rem', fontSize: '0.68rem', fontWeight: 900, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>BRANCH MEMBER</span>
+                    <div style={{ position: 'relative', width: 72, height: 72, margin: '1rem auto 0.75rem', borderRadius: '50%', background: 'linear-gradient(135deg, #FFF0C0, #F5C842)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 0 0 3px #F5C842' }}>
+                      <img src="/tiggy.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'sepia(0.15) saturate(1.3) brightness(1.05)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                      <span style={{ position: 'absolute', top: 2, right: 4, fontSize: '0.9rem', lineHeight: 1 }}>👑</span>
+                    </div>
+                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Kingdom Lamb</p>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$4.99</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
+                    </div>
+                    <button className="btn-gold" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Start Free Trial</button>
+                  </th>
+
+                  {/* Royal Family */}
+                  <th style={{ background: 'var(--maroon)', padding: '1.75rem 1rem 1.5rem', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.15)', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 0.75rem', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 0 0 3px rgba(255,255,255,0.3)' }}>
+                      <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'brightness(1.1)' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+                      <span style={{ position: 'absolute', top: 2, right: 2, fontSize: '0.85rem', lineHeight: 1 }}>✨</span>
+                    </div>
+                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: 'white', margin: '0 0 0.25rem' }}>Royal Family</p>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: 'white' }}>$9.99</span>
+                      <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>/month</span>
+                    </div>
+                    <button className="btn-gold" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Start Free Trial</button>
+                  </th>
+
+                  {/* Monastery */}
+                  <th style={{ background: 'white', padding: '1.75rem 1rem 1.5rem', textAlign: 'center', borderBottom: '1px solid #EDE8DF', borderLeft: '1px solid #EDE8DF' }}>
+                    <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 0.75rem', borderRadius: '50%', background: 'linear-gradient(135deg, #E8E0F0, #C5B8D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 0 0 3px #C5B8D8' }}>
+                      <img src="/tiggy.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'hue-rotate(220deg) saturate(0.6) brightness(0.95)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                      <span style={{ position: 'absolute', top: 2, right: 4, fontSize: '0.85rem', lineHeight: 1 }}>🕊️</span>
+                    </div>
+                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Monastery</p>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$29.99</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
+                    </div>
+                    <button className="btn-maroon" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Subscribe Now</button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  { label: 'Episodes',       values: [{ t: '3 / month', c: '#C9A227' }, { t: '✓', c: '#3A7A30' }, { t: '✓', c: '#3A7A30' }, { t: '✓', c: '#3A7A30' }] },
+                  { label: 'Activities',     values: [{ t: 'Limited', c: 'var(--text-muted)' }, { t: '✓', c: '#3A7A30' }, { t: 'Unlimited', c: '#C9A227' }, { t: '✓', c: '#3A7A30' }] },
+                  { label: 'Downloads',      values: [{ t: 'None', c: 'var(--text-muted)' }, { t: '10 items', c: 'var(--text-secondary)' }, { t: 'Unlimited', c: 'var(--text-secondary)' }, { t: 'Unlimited', c: 'var(--text-secondary)' }] },
+                  { label: 'Shop Discount',  values: [{ t: 'None', c: 'var(--text-muted)' }, { t: '10%', c: 'var(--text-secondary)' }, { t: '15%', c: 'var(--text-secondary)' }, { t: '20%', c: 'var(--text-secondary)' }] },
+                  { label: 'Child Profiles', values: [{ t: '1', c: 'var(--text-muted)' }, { t: '3', c: 'var(--text-secondary)' }, { t: 'Unlimited', c: 'var(--text-secondary)' }, { t: 'VIP Access', c: '#C9A227' }] },
+                  { label: 'Live Events',    values: [{ t: '✗', c: '#C0B9B0' }, { t: '✗', c: '#C0B9B0' }, { t: 'Access', c: 'var(--text-secondary)' }, { t: '✓', c: '#3A7A30' }] },
+                ] as { label: string; values: { t: string; c: string }[] }[]).map((row, ri) => (
+                  <tr key={row.label} style={{ background: ri % 2 === 0 ? '#FAFAF7' : 'white' }}>
+                    <td style={{ padding: '1rem 1.25rem', fontWeight: 700, fontSize: '0.9rem', color: '#1B2A4A', borderRight: '1px solid #EDE8DF' }}>{row.label}</td>
+                    {row.values.map((v, vi) => (
+                      <td key={vi} style={{
+                        padding: '1rem 0.75rem',
+                        textAlign: 'center',
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        color: v.c,
+                        background: vi === 2 ? (ri % 2 === 0 ? 'rgba(107,32,32,0.06)' : 'rgba(107,32,32,0.03)') : undefined,
+                        borderLeft: '1px solid ' + (vi === 2 ? 'rgba(107,32,32,0.1)' : '#EDE8DF'),
+                      }}>{v.t}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', marginTop: '1.25rem' }}>
+            30-day money-back guarantee · Secure payment · Cancel any time
+          </p>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>YOUR HONEST QUESTIONS</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 2.5rem', color: '#1B2A4A' }}>The three things parents ask us most</h2>

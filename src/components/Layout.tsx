@@ -61,7 +61,6 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [badgeAnim, setBadgeAnim]     = useState(false);
   const [mobileEmail, setMobileEmail] = useState('');
-  const [footerEmail, setFooterEmail] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   const { user, logout }       = useAuth();
@@ -117,33 +116,26 @@ export default function Layout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const handleFooterSubscribe = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!footerEmail) return;
-    try {
-      await fetch(`${NEWSLETTER_API}/api/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: footerEmail, source: 'footer' }),
-      });
-    } catch { /* silent */ }
-    addToast("You've joined Tiggy's Kingdom Mail!", 'success');
-    setFooterEmail('');
-  };
-
   const handleMobileNewsletter = async (e: FormEvent) => {
     e.preventDefault();
     if (!mobileEmail) return;
     try {
-      await fetch(`${NEWSLETTER_API}/api/subscribe`, {
+      const res = await fetch(`${NEWSLETTER_API}/api/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: mobileEmail, source: 'mobile-menu' }),
       });
-    } catch { /* silent */ }
-    addToast("You've joined Tiggy's Kingdom Mail!", 'success');
-    setMobileEmail('');
-    setMobileOpen(false);
+      const data = await res.json();
+      if (data.success) {
+        addToast("You've joined Tiggy's Kingdom Mail!", 'success');
+        setMobileEmail('');
+        setMobileOpen(false);
+      } else {
+        addToast(data.error || 'Something went wrong. Please try again.', 'error');
+      }
+    } catch {
+      addToast('Could not connect. Please try again.', 'error');
+    }
   };
 
   return (
@@ -162,12 +154,14 @@ export default function Layout({ children }: { children: ReactNode }) {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.25rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
 
           {/* Logo */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/tiggy.png" alt="Tiggy" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--cream-border)' }} />
-            <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.2rem', color: 'var(--maroon)', lineHeight: 1.1 }}>
-              Tiggy's<br />
-              <span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
-            </span>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', textDecoration: 'none', flexShrink: 0 }}>
+            <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'linear-gradient(145deg, #F7E97A, #E8C020)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(200,155,0,0.35)' }}>
+              <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '50%' }} />
+            </div>
+            <div style={{ lineHeight: 1 }}>
+              <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.25rem', color: '#1B2A4A', letterSpacing: '-0.02em', WebkitTextStroke: '0.4px #1B2A4A' }}>Tiggy's Kingdom</div>
+              <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.58rem', color: '#C9A227', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.15rem' }}>Play · Learn · Grow with God</div>
+            </div>
           </Link>
 
           {/* Desktop nav links */}
@@ -301,9 +295,14 @@ export default function Layout({ children }: { children: ReactNode }) {
       {mobileOpen && (
         <div className="mobile-menu-overlay" style={{ paddingBottom: '2rem' }}>
           <div style={{ padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--cream-border)' }}>
-            <Link to="/" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <img src="/tiggy.png" alt="Tiggy" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} />
-              <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.1rem', color: 'var(--maroon)' }}>Tiggy's Kingdom</span>
+            <Link to="/" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', textDecoration: 'none' }}>
+              <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(145deg, #F7E97A, #E8C020)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 6px rgba(200,155,0,0.3)' }}>
+                <img src="/tiggy.png" alt="Tiggy" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '50%' }} />
+              </div>
+              <div style={{ lineHeight: 1 }}>
+                <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.2rem', color: '#1B2A4A', letterSpacing: '-0.02em', WebkitTextStroke: '0.4px #1B2A4A' }}>Tiggy's Kingdom</div>
+                <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.56rem', color: '#C9A227', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.15rem' }}>Play · Learn · Grow with God</div>
+              </div>
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <button onClick={() => setMobileOpen(false)} style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--maroon)', color: 'white', border: 'none', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -388,13 +387,13 @@ export default function Layout({ children }: { children: ReactNode }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem', marginBottom: '3rem', alignItems: 'start' }}>
             <div>
               <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', marginBottom: '1rem' }}>
-                <div style={{ width: 50, height: 50, borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.2)', flexShrink: 0 }}>
-                  <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'linear-gradient(145deg, #F7E97A, #E8C020)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 10px rgba(200,155,0,0.4)' }}>
+                  <img src="/tiggy.png" alt="Tiggy" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '50%' }} />
                 </div>
-                <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.35rem', color: 'white', lineHeight: 1.1 }}>
-                  Tiggy's<br />
-                  <span style={{ fontSize: '0.82rem', fontWeight: 400, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.1em' }}>KINGDOM</span>
-                </span>
+                <div style={{ lineHeight: 1 }}>
+                  <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.4rem', color: 'white', letterSpacing: '-0.02em', WebkitTextStroke: '0.4px white' }}>Tiggy's Kingdom</div>
+                  <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.62rem', color: '#F5C842', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.2rem' }}>Play · Learn · Grow with God</div>
+                </div>
               </Link>
               <p style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.65, margin: '0 0 1.5rem', maxWidth: 260 }}>
                 Orthodox Christian stories that help little hearts grow in faith, wonder, and love. Made with prayer by an Orthodox family.
@@ -425,16 +424,15 @@ export default function Layout({ children }: { children: ReactNode }) {
               </div>
             ))}
 
-            {/* Newsletter column */}
+            {/* Subscribe column */}
             <div>
-              <h4 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.8rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.9)', margin: '0 0 0.625rem', textTransform: 'uppercase' }}>Newsletter</h4>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, margin: '0 0 0.75rem', lineHeight: 1.5 }}>
-                Weekly stories, free printables &amp; feast reminders.
+              <h4 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.8rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.9)', margin: '0 0 0.625rem', textTransform: 'uppercase' }}>Subscribe</h4>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, margin: '0 0 1rem', lineHeight: 1.6 }}>
+                Unlimited stories, activities &amp; parent guides — ad-free, always faithful.
               </p>
-              <form style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }} onSubmit={handleFooterSubscribe}>
-                <input type="email" placeholder="Your email" className="tk-input" style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem', background: 'rgba(255,255,255,0.07)', borderColor: 'rgba(255,255,255,0.15)', color: 'white' }} value={footerEmail} onChange={e => setFooterEmail(e.target.value)} required />
-                <button type="submit" className="btn-gold" style={{ padding: '0.5rem 0.875rem', fontSize: '0.85rem' }}>Subscribe</button>
-              </form>
+              <Link to="/subscribe" className="btn-gold" style={{ display: 'inline-block', padding: '0.55rem 1.25rem', fontSize: '0.875rem', textDecoration: 'none' }}>
+                View Plans →
+              </Link>
             </div>
           </div>
 

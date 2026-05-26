@@ -1,24 +1,11 @@
-import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 
 function TiggyHero() {
-  const ref = useRef<HTMLImageElement>(null);
-  const handleClick = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.classList.remove('bouncing');
-    void el.offsetWidth; // reflow to restart
-    el.classList.add('bouncing');
-    el.addEventListener('animationend', () => el.classList.remove('bouncing'), { once: true });
-  }, []);
   return (
-    <img
-      ref={ref}
-      src="/tiggy-hero.png"
-      alt="Tiggy the Lamb"
-      className="tiggy-hero"
-      onClick={handleClick}
-      title="Click me!"
-      style={{ width: '100%', maxHeight: 500, objectFit: 'contain', filter: 'drop-shadow(0 24px 48px rgba(107,32,32,0.2))' }}
+    <video
+      src="/tiggy-hero.mp4"
+      autoPlay loop muted playsInline
+      style={{ width: '100%', maxWidth: 420, objectFit: 'contain', display: 'block', mixBlendMode: 'multiply' }}
     />
   );
 }
@@ -149,10 +136,10 @@ export default function Home() {
             <span style={{ display: 'inline-block', background: 'var(--gold-pale)', color: 'var(--gold-dark)', fontWeight: 800, fontSize: '0.8rem', padding: '0.35rem 1rem', borderRadius: '9999px', marginBottom: '1.5rem', letterSpacing: '0.03em' }}>
               Orthodox stories for ages 4+
             </span>
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', lineHeight: 1.05, margin: '0 0 1rem', color: 'var(--text-primary)', fontWeight: 700 }}>
-              Meet <span style={{ color: '#D4691D' }}>Tiggy</span>, the<br />little lamb who<br />loves <span style={{ color: '#3A7A30' }}>God</span>!
+            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', lineHeight: 1.08, margin: '0 0 1rem', color: '#1A4FA0', fontWeight: 900 }}>
+              Meet <span style={{ color: '#C9A227' }}>Tiggy</span>, the<br />little lamb who<br />loves <span style={{ color: '#3A7A30' }}>God</span>!
             </h1>
-            <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.1rem', color: 'var(--text-secondary)', margin: '0 0 1.25rem' }}>
+            <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.25rem', color: '#1A4FA0', margin: '0 0 1.25rem', fontWeight: 500 }}>
               Play, Learn &amp; Grow with God ✦
             </p>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0 0 2.25rem', maxWidth: 480, fontSize: '1.05rem' }}>
@@ -164,9 +151,7 @@ export default function Home() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ maxWidth: 460, width: '100%' }}>
-              <TiggyHero />
-            </div>
+            <TiggyHero />
           </div>
         </div>
       </section>

@@ -659,18 +659,29 @@ export default function Lessons() {
   return (
     <div>
       {/* ── Hero ── */}
-      <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <div className="tiggy-float" style={{ width: 130, height: 145, margin: '0 auto 1.25rem' }}>
-            <img src="/tiggy-point.png" alt="Tiggy pointing" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
-          </div>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+      <section style={{ background: 'var(--cream)', overflow: 'hidden' }}>
+        {/* video — full width, cropped to TV region */}
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
+          <video
+            src="/tiggy-watch.mp4"
+            autoPlay loop muted playsInline
+            style={{
+              width: 'clamp(260px, 38vw, 480px)',
+              objectFit: 'contain',
+              mixBlendMode: 'multiply',
+              display: 'block',
+            }}
+          />
+        </div>
+        {/* text below */}
+        <div style={{ textAlign: 'center', padding: '0.5rem 1.25rem 2.5rem', maxWidth: 660, margin: '0 auto' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem' }}>
             📺 The Watch Library
           </span>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
-            Stories to <span style={{ color: '#D4691D' }}>play</span> &amp; watch together
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.75rem, 4vw, 3rem)', margin: '0 0 0.75rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+            Stories to <span style={{ color: '#C9A227' }}>play</span> &amp; watch together
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: '0 auto', maxWidth: 520, lineHeight: 1.7, fontSize: '1.05rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: 0, lineHeight: 1.7, fontSize: '1rem' }}>
             Every film is hand-crafted, faithful to the tradition, and gentle enough for the youngest souls. A new story every Sunday.
           </p>
         </div>
