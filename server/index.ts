@@ -701,12 +701,15 @@ app.delete("/api/admin/guides/file", requireAdmin, async (req: Request, res: Res
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get("/health", (_req: Request, res: Response) => res.json({ status: "ok", time: new Date().toISOString() }));
 
-// ── Startup ───────────────────────────────────────────────────────────────────
-const server = app.listen(PORT, () => console.log(`✅  Tiggy's Kingdom API  →  http://localhost:${PORT}`));
+export default app;
 
-process.on("uncaughtException",  (err)    => { console.error("Uncaught Exception:",  err); process.exit(1); });
-process.on("unhandledRejection", (reason) => { console.error("Unhandled Rejection:", reason); process.exit(1); });
-server.on("error", (err: NodeJS.ErrnoException) => {
-  console.error(err.code === "EADDRINUSE" ? `Port ${PORT} is already in use.` : err);
-  process.exit(1);
-});
+// ── Local dev only — Vercel runs the exported app as a serverless function ────
+if (!process.env.VERCEL) {
+  const server = app.listen(PORT, () => console.log(`✅  Tiggy's Kingdom API  →  http://localhost:${PORT}`));
+  process.on("uncaughtException",  (err)    => { console.error("Uncaught Exception:",  err); process.exit(1); });
+  process.on("unhandledRejection", (reason) => { console.error("Unhandled Rejection:", reason); process.exit(1); });
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    console.error(err.code === "EADDRINUSE" ? `Port ${PORT} is already in use.` : err);
+    process.exit(1);
+  });
+}
