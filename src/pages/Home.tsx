@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react';
+﻿import { useState, useEffect, type FormEvent } from 'react';
 
 function TiggyHero() {
   return (
@@ -136,10 +136,10 @@ export default function Home() {
             <span style={{ display: 'inline-block', background: 'var(--gold-pale)', color: 'var(--gold-dark)', fontWeight: 800, fontSize: '0.8rem', padding: '0.35rem 1rem', borderRadius: '9999px', marginBottom: '1.5rem', letterSpacing: '0.03em' }}>
               Orthodox stories for ages 4+
             </span>
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', lineHeight: 1.08, margin: '0 0 1rem', color: '#1A4FA0', fontWeight: 900 }}>
+            <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', lineHeight: 1.08, margin: '0 0 1rem', color: '#1A4FA0', fontWeight: 900 }}>
               Meet <span style={{ color: '#C9A227' }}>Tiggy</span>, the<br />little lamb who<br />loves <span style={{ color: '#3A7A30' }}>God</span>!
             </h1>
-            <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.25rem', color: '#1A4FA0', margin: '0 0 1.25rem', fontWeight: 500 }}>
+            <p style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: '1.25rem', color: '#1A4FA0', margin: '0 0 1.25rem', fontWeight: 500 }}>
               Play, Learn &amp; Grow with God ✦
             </p>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0 0 2.25rem', maxWidth: 480, fontSize: '1.05rem' }}>
@@ -159,26 +159,25 @@ export default function Home() {
       {/* ===== THREE JOYFUL WAYS ===== */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>OUR LITTLE PROMISE</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>OUR LITTLE PROMISE</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', margin: '0 0 0.75rem', color: 'var(--text-primary)' }}>Three joyful ways to grow</h2>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 auto 3rem', maxWidth: 520, lineHeight: 1.6 }}>
             Everything in Tiggy's Kingdom is built around three simple, beautiful ideas.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-            {([
-              { color: '#C0392B', label: 'Play',  subtitle: 'Joyful adventures',  desc: "Songs, animated episodes, and games that make faith feel like the best kind of fun.",                              cta: 'Start playing →',  to: '/activities', img: '/tiggy-wave.png'  },
-              { color: '#2E8B57', label: 'Learn', subtitle: 'Saints & feasts',    desc: "Gentle, faithful storytelling that teaches the lives of the saints and the meaning of the Church year.",           cta: 'Start learning →', to: '/episodes',   img: '/tiggy-point.png' },
-              { color: '#2C5FA0', label: 'Grow',  subtitle: 'With God',           desc: "Simple prayers, kindness, and quiet moments that help little hearts grow close to Christ.",                         cta: 'Start growing →',  to: '/calendar',   img: '/tiggy-pray.png'  },
-            ] as const).map(card => (
+            {[
+              { color: '#C0392B', label: 'Play',  subtitle: 'Joyful adventures',  desc: "Songs, animated episodes, and games that make faith feel like the best kind of fun.",                              cta: 'Start playing →',  to: '/activities', video: '/tiggy%20play.mp4'  },
+              { color: '#2E8B57', label: 'Learn', subtitle: 'Saints & feasts',    desc: "Gentle, faithful storytelling that teaches the lives of the saints and the meaning of the Church year.",           cta: 'Start learning →', to: '/episodes',   video: '/tiggy%20learn.mp4' },
+              { color: '#2C5FA0', label: 'Grow',  subtitle: 'With God',           desc: "Simple prayers, kindness, and quiet moments that help little hearts grow close to Christ.",                         cta: 'Start growing →',  to: '/calendar',   video: '/tiggy%20grow.mp4'  },
+            ].map(card => (
               <div key={card.label} className="card" style={{ overflow: 'hidden', textAlign: 'center', borderTop: `4px solid ${card.color}` }}>
                 <div style={{ padding: '2rem 1.5rem 0.75rem', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <img
-                    src={card.img}
-                    alt={`Tiggy — ${card.label}`}
+                  <video
+                    src={card.video}
+                    autoPlay loop muted playsInline
                     style={{ width: 160, height: 180, objectFit: 'contain', filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.12))' }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }}
                   />
-                  <h3 style={{ fontFamily: 'Playfair Display, serif', color: card.color, fontSize: '2rem', margin: '0.5rem 0 0', fontWeight: 700 }}>{card.label}</h3>
+                  <h3 style={{ fontFamily: 'Fraunces, serif', color: card.color, fontSize: '2rem', margin: '0.5rem 0 0', fontWeight: 700 }}>{card.label}</h3>
                   <p style={{ color: '#1B2A4A', fontWeight: 800, margin: '0.2rem 0 0', fontSize: '0.9rem' }}>{card.subtitle}</p>
                 </div>
                 <div style={{ padding: '1.1rem 1.75rem 1.75rem', background: 'white' }}>
@@ -199,7 +198,7 @@ export default function Home() {
       {/* ===== YOUTUBE EPISODES ===== */}
       <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#2E8B57', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>ON OUR YOUTUBE CHANNEL</p>
+          <p style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#2E8B57', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>ON OUR YOUTUBE CHANNEL</p>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
             <h2 style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)', margin: 0, color: 'var(--text-primary)', maxWidth: 520, lineHeight: 1.2 }}>Stories the whole family can watch together</h2>
             <Link to="/episodes" className="btn-maroon" style={{ flexShrink: 0, padding: '0.6rem 1.25rem', fontSize: '0.875rem', marginTop: '0.25rem' }}>▶ All episodes</Link>
@@ -254,7 +253,7 @@ export default function Home() {
                       )}
                     </div>
                     <div style={{ padding: '1.25rem' }}>
-                      <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '1rem', margin: '0 0 0.625rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{v.title}</h3>
+                      <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 800, fontSize: '1rem', margin: '0 0 0.625rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{v.title}</h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.875rem' }}>
                         <span style={{ color: '#F5C842', fontSize: '0.85rem' }}>★★★★★</span>
                         <span style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '9999px' }}>Ages 4+</span>
@@ -291,14 +290,20 @@ export default function Home() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: 'var(--text-primary)' }}>So much to do together</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-            {[
-              { icon: '🎨', iconBg: '#FFE8E8', to: '/activities', title: 'Activities for Kids',  desc: 'Coloring pages, word puzzles, memory cards, printable crafts, and "Draw with Tiggy."', cta: 'Start playing →' },
-              { icon: '🙏', iconBg: '#E8F0FF', to: '/calendar',   title: 'Prayer Corner',        desc: 'Simple prayers for little ones, plus a feast-day calendar to follow the Church year.',  cta: 'Visit the corner →' },
+            {([
+              { img: '/tiggy%20activities.jpg', to: '/activities', title: 'Activities for Kids',  desc: 'Coloring pages, word puzzles, memory cards, printable crafts, and "Draw with Tiggy."', cta: 'Start playing →' },
+              { img: '/tiggy%20prayer%20corner.jpg', to: '/calendar', title: 'Prayer Corner',    desc: 'Simple prayers for little ones, plus a feast-day calendar to follow the Church year.',  cta: 'Visit the corner →' },
               { icon: '📚', iconBg: '#E8F8EC', to: '/shop',       title: 'The Bookshop',         desc: 'Hardcover storybooks, treasuries, and activity books — perfect for gifts and keepsakes.', cta: 'Browse books →' },
-            ].map(item => (
+            ] as Array<{ img?: string; icon?: string; iconBg?: string; to: string; title: string; desc: string; cta: string }>).map(item => (
               <div key={item.title} className="card" style={{ background: 'white', padding: '2rem' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '1rem', background: item.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', marginBottom: '1.25rem' }}>{item.icon}</div>
-                <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', margin: '0 0 0.75rem', color: 'var(--text-primary)' }}>{item.title}</h3>
+                {item.img ? (
+                  <div style={{ width: 80, height: 80, borderRadius: '1rem', overflow: 'hidden', marginBottom: '1.25rem' }}>
+                    <img src={item.img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ) : (
+                  <div style={{ width: 56, height: 56, borderRadius: '1rem', background: item.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem', marginBottom: '1.25rem' }}>{item.icon}</div>
+                )}
+                <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '1.25rem', margin: '0 0 0.75rem', color: 'var(--text-primary)' }}>{item.title}</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.65, fontWeight: 600, margin: '0 0 1.25rem', fontSize: '0.9rem' }}>{item.desc}</p>
                 <Link
                   to={item.to}
@@ -316,12 +321,12 @@ export default function Home() {
       <section style={{ background: '#1B2A4A', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div className="tiggy-float" style={{ maxWidth: 320, margin: '0 auto' }}>
-              <img src="/tiggy-pray.png" alt="Tiggy praying" style={{ width: '100%', maxHeight: 380, objectFit: 'contain', filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.45))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+            <div style={{ maxWidth: 320, margin: '0 auto', borderRadius: '1.25rem', overflow: 'hidden' }}>
+              <img src="/tiggy%20mission.jpg" alt="Tiggy on a mission" style={{ width: '100%', maxHeight: 380, objectFit: 'cover', display: 'block', filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.45))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-pray.png'; }} />
             </div>
           </div>
           <div>
-            <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>OUR MISSION</p>
+            <p style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>OUR MISSION</p>
             <h2 style={{ color: 'white', fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', margin: '0 0 1.25rem', lineHeight: 1.2 }}>
               Faith planted gently, in stories children remember
             </h2>
@@ -349,7 +354,7 @@ export default function Home() {
       {/* ===== TESTIMONIALS ===== */}
       <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FROM OUR FAMILIES</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FROM OUR FAMILIES</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: 'var(--text-primary)' }}>
             Loved by parents, priests &amp; godparents
           </h2>
@@ -359,8 +364,8 @@ export default function Home() {
                 <div style={{ color: '#F5C842', fontSize: '0.9rem', marginBottom: '1rem', letterSpacing: '0.05em' }}>★★★★★</div>
                 <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0 0 1.5rem', fontSize: '0.95rem', fontStyle: 'italic' }}>"{t.quote}"</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--maroon)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: '1rem', flexShrink: 0 }}>
-                    {t.name.charAt(0)}
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--cream-dark)', border: '2px solid var(--maroon)', flexShrink: 0, overflow: 'hidden' }}>
+                    <img src={['/tiggy-wave.png', '/tiggy-pray.png', '/tiggy-point.png'][i % 3]} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   </div>
                   <div>
                     <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.875rem' }}>{t.name}</p>
@@ -376,8 +381,8 @@ export default function Home() {
       {/* ===== NEWSLETTER ===== */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ width: 120, height: 130, margin: '0 auto 1rem', overflow: 'hidden' }}>
-            <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(201,146,42,0.25))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+          <div style={{ width: 120, height: 130, margin: '0 auto 1rem', overflow: 'hidden', borderRadius: '1rem' }}>
+            <img src="/tiggy%20mail.jpg" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-cheer.png'; }} />
           </div>
           <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', margin: '0 0 0.875rem', color: 'var(--text-primary)' }}>Join Tiggy's Kingdom Mail ✉</h2>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: '0 0 2rem', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto', fontSize: '1rem' }}>

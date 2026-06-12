@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
@@ -152,13 +152,13 @@ export default function Calendar() {
       {/* ── Hero ── */}
       <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
-          <div className="tiggy-float" style={{ width: 130, height: 145, margin: '0 auto 1.25rem' }}>
-            <img src="/tiggy-pray.png" alt="Tiggy praying" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+          <div style={{ width: 160, height: 160, margin: '0 auto 1.25rem', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 8px 24px rgba(107,32,32,0.18)' }}>
+            <img src="/tiggy%20prayer%20corner.jpg" alt="Prayer Corner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-pray.png'; }} />
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
             🙏 The Prayer Corner
           </span>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
             A quiet place to <span style={{ color: '#3A7A30' }}>grow with God</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: 0, fontSize: '1.05rem' }}>
@@ -171,13 +171,13 @@ export default function Calendar() {
       <section style={{ background: '#1B2A4A', padding: '4rem 1.25rem' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '3rem', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ maxWidth: 260, margin: '0 auto' }}>
-              <img src="/tiggy-pray.png" alt="Tiggy praying" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', filter: 'drop-shadow(0 12px 28px rgba(0,0,0,0.4))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+            <div style={{ maxWidth: 260, margin: '0 auto', borderRadius: '1.25rem', overflow: 'hidden' }}>
+              <video src="/tiggy%20prayer.mp4" autoPlay loop muted playsInline style={{ width: '100%', maxHeight: 300, objectFit: 'cover', display: 'block' }} />
             </div>
           </div>
           <div>
-            <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 1rem' }}>PRAY WITH TIGGY</p>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)', margin: '0 0 1.25rem', lineHeight: 1.25 }}>
+            <p style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 1rem' }}>PRAY WITH TIGGY</p>
+            <h2 style={{ fontFamily: 'Fraunces, serif', color: 'white', fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)', margin: '0 0 1.25rem', lineHeight: 1.25 }}>
               "When you pray, Tiggy prays with you."
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.68)', lineHeight: 1.8, fontWeight: 500, margin: 0, fontSize: '1rem' }}>
@@ -190,7 +190,7 @@ export default function Calendar() {
       {/* ── Prayers to learn by heart ── */}
       <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>LITTLE PRAYERS</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>LITTLE PRAYERS</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: '#1B2A4A' }}>Prayers to learn by heart</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {prayers.map(p => (
@@ -210,7 +210,7 @@ export default function Calendar() {
                     🖨 Print
                   </button>
                 </div>
-                <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1rem', margin: '0 0 0.75rem', color: '#1B2A4A' }}>{p.title}</h3>
+                <h3 style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1rem', margin: '0 0 0.75rem', color: '#1B2A4A' }}>{p.title}</h3>
                 <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0 0 0.875rem', fontSize: '0.9rem', fontStyle: 'italic' }}>
                   "{p.text}"
                 </p>
@@ -224,7 +224,7 @@ export default function Calendar() {
       {/* ── Feast Day Calendar ── */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FOLLOW THE CHURCH YEAR</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FOLLOW THE CHURCH YEAR</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 0.75rem', color: '#1B2A4A' }}>Feast Day Calendar</h2>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 auto 1.75rem', maxWidth: 480, lineHeight: 1.6 }}>
             The great feasts and beloved saints, all year long. Tap a month to explore.
@@ -335,7 +335,7 @@ export default function Calendar() {
         <div style={{ maxWidth: 580, margin: '0 auto' }}>
           <div className="card" style={{ padding: '2.5rem', textAlign: 'center', background: 'white' }}>
             <div style={{ width: 110, height: 120, margin: '0 auto 1rem', overflow: 'hidden' }}>
-              <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+              <img src="/tiggy%20mail.jpg" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-cheer.png'; }} />
             </div>
             <h2 style={{ fontSize: 'clamp(1.35rem, 3vw, 1.75rem)', margin: '0 0 0.75rem', color: '#1B2A4A' }}>Weekly feast reminders 🔔</h2>
             <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.65, margin: '0 0 1.75rem', fontSize: '0.95rem' }}>

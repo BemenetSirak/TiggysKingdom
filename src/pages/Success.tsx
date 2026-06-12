@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -53,7 +53,7 @@ export default function Success() {
 
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg, #FEF3C7, white)' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🐑</div>
-          <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'var(--maroon)', fontWeight: 700, margin: 0, fontSize: '1rem' }}>
+          <p style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', color: 'var(--maroon)', fontWeight: 700, margin: 0, fontSize: '1rem' }}>
             "May these stories bring your family closer to God."
           </p>
           <p style={{ color: 'var(--gold-dark)', fontWeight: 700, fontSize: '0.8rem', margin: '0.5rem 0 0' }}>

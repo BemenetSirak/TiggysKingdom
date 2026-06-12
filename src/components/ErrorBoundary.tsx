@@ -1,4 +1,4 @@
-import { Component, type ReactNode } from 'react';
+﻿import { Component, type ReactNode } from 'react';
 
 interface Props { children: ReactNode; }
 interface State { error: Error | null; }
@@ -18,7 +18,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div style={{ width: 80, height: 80, margin: '0 auto 1.5rem', borderRadius: '50%', overflow: 'hidden' }}>
               <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', color: 'var(--maroon)', fontSize: '1.75rem', margin: '0 0 0.75rem' }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', color: 'var(--maroon)', fontSize: '1.75rem', margin: '0 0 0.75rem' }}>
               Something went wrong
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.65, margin: '0 0 1.75rem' }}>

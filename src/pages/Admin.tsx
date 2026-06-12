@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type ReactNode, type CSSProperties, type FormEvent, type ChangeEvent } from 'react';
+﻿import { useState, useEffect, useCallback, useRef, type ReactNode, type CSSProperties, type FormEvent, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { API } from '../lib/api';
@@ -154,7 +154,7 @@ function StatCard({ icon, label, value, sub, color }: { icon: string; label: str
       </div>
       <div>
         <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-        <p style={{ margin: '0.15rem 0 0', fontSize: '1.75rem', fontWeight: 900, color, fontFamily: 'Nunito, sans-serif', lineHeight: 1 }}>{value}</p>
+        <p style={{ margin: '0.15rem 0 0', fontSize: '1.75rem', fontWeight: 900, color, fontFamily: 'Fredoka, sans-serif', lineHeight: 1 }}>{value}</p>
         {sub && <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{sub}</p>}
       </div>
     </div>
@@ -258,7 +258,7 @@ function ProductsTab({ toast }: { toast: ToastFn }) {
     load();
   };
 
-  const inputStyle: CSSProperties = { width: '100%', padding: '0.6rem 0.875rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
+  const inputStyle: CSSProperties = { width: '100%', padding: '0.6rem 0.875rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
 
   return (
     <div>
@@ -329,7 +329,7 @@ function ProductsTab({ toast }: { toast: ToastFn }) {
                         type="number" value={editStockVal} autoFocus
                         onChange={e => setEditStockVal(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') saveStock(p.id); if (e.key === 'Escape') setEditStockId(null); }}
-                        style={{ width: 60, padding: '0.2rem 0.4rem', border: '1.5px solid var(--maroon)', borderRadius: '0.3rem', fontFamily: 'Nunito', fontWeight: 700, fontSize: '0.85rem', outline: 'none' }}
+                        style={{ width: 60, padding: '0.2rem 0.4rem', border: '1.5px solid var(--maroon)', borderRadius: '0.3rem', fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.85rem', outline: 'none' }}
                       />
                       <button onClick={() => saveStock(p.id)} style={{ padding: '0.2rem 0.4rem', border: 'none', background: '#DCFCE7', color: '#166534', borderRadius: '0.3rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>✓</button>
                     </span>
@@ -538,7 +538,7 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
         <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1D4ED8' }}>{selected.size} order{selected.size !== 1 ? 's' : ''} selected</span>
           <span style={{ color: '#93C5FD' }}>→</span>
-          <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)} style={{ padding: '0.3rem 0.5rem', border: '1.5px solid #BFDBFE', borderRadius: '0.4rem', fontFamily: 'Nunito', fontSize: '0.85rem', fontWeight: 700, color: '#1D4ED8', background: 'white', cursor: 'pointer' }}>
+          <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)} style={{ padding: '0.3rem 0.5rem', border: '1.5px solid #BFDBFE', borderRadius: '0.4rem', fontFamily: 'Fredoka', fontSize: '0.85rem', fontWeight: 700, color: '#1D4ED8', background: 'white', cursor: 'pointer' }}>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <button onClick={applyBulk} style={{ padding: '0.3rem 0.875rem', borderRadius: '0.4rem', border: 'none', background: '#1D4ED8', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}>
@@ -588,12 +588,12 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
                         type="text" value={editTrackVal} autoFocus placeholder="Tracking #"
                         onChange={e => setEditTrackVal(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') saveTracking(o.id); if (e.key === 'Escape') setEditTrackId(null); }}
-                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--maroon)', borderRadius: '0.3rem', fontFamily: 'Nunito', fontSize: '0.8rem', outline: 'none' }}
+                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--maroon)', borderRadius: '0.3rem', fontFamily: 'Fredoka', fontSize: '0.8rem', outline: 'none' }}
                       />
                       <input
                         type="text" value={editCarrierVal} placeholder="Carrier (UPS, USPS…)"
                         onChange={e => setEditCarrierVal(e.target.value)}
-                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.3rem', fontFamily: 'Nunito', fontSize: '0.78rem', outline: 'none' }}
+                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.3rem', fontFamily: 'Fredoka', fontSize: '0.78rem', outline: 'none' }}
                       />
                       <span style={{ display: 'inline-flex', gap: '0.25rem' }}>
                         <button onClick={() => saveTracking(o.id)} style={{ padding: '0.2rem 0.4rem', border: 'none', background: '#DCFCE7', color: '#166534', borderRadius: '0.3rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>✓</button>
@@ -615,7 +615,7 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
                         type="text" value={editNoteVal} autoFocus placeholder="Add note…"
                         onChange={e => setEditNoteVal(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') saveNote(o.id); if (e.key === 'Escape') setEditNoteId(null); }}
-                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--maroon)', borderRadius: '0.3rem', fontFamily: 'Nunito', fontSize: '0.8rem', outline: 'none' }}
+                        style={{ width: 120, padding: '0.2rem 0.4rem', border: '1.5px solid var(--maroon)', borderRadius: '0.3rem', fontFamily: 'Fredoka', fontSize: '0.8rem', outline: 'none' }}
                       />
                       <button onClick={() => saveNote(o.id)} style={{ padding: '0.2rem 0.4rem', border: 'none', background: '#DCFCE7', color: '#166534', borderRadius: '0.3rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>✓</button>
                     </span>
@@ -631,7 +631,7 @@ function OrdersTab({ toast }: { toast: ToastFn }) {
                   <select
                     value={o.status}
                     onChange={e => updateStatus(o.id, e.target.value)}
-                    style={{ padding: '0.3rem 0.5rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '0.3rem 0.5rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -668,7 +668,7 @@ function SubscribersTab({ toast }: { toast: ToastFn }) {
   const sendBlast = async (e: FormEvent) => {
     e.preventDefault();
     setSending(true);
-    const html = `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px;color:#222">${blastBody.replace(/\n/g, '<br/>')}<p style="color:#888;font-size:12px;margin-top:24px">© 2025 Tiggy's Kingdom</p></div>`;
+    const html = `<div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px;color:#222">${blastBody.replace(/\n/g, '<br/>')}<p style="color:#888;font-size:12px;margin-top:24px">© ${new Date().getFullYear()} Tiggy's Kingdom</p></div>`;
     const res = await apiFetch('/api/admin/email-blast', { method: 'POST', body: JSON.stringify({ subject: blastSubject, html }) });
     setSending(false);
     if (res.error) { toast(res.error, 'error'); return; }
@@ -682,7 +682,7 @@ function SubscribersTab({ toast }: { toast: ToastFn }) {
   const removedCount = allSubs.filter(s => !s.active).length;
   const { page, setPage, totalPages, slice } = usePager(visible, 25, showRemoved);
 
-  const inputStyle: CSSProperties = { width: '100%', padding: '0.6rem 0.875rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
+  const inputStyle: CSSProperties = { width: '100%', padding: '0.6rem 0.875rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
 
   return (
     <div>
@@ -860,7 +860,7 @@ function EpisodesTab({ toast }: { toast: ToastFn }) {
     load();
   };
 
-  const inputStyle: CSSProperties = { width: '100%', padding: '0.6rem 0.875rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
+  const inputStyle: CSSProperties = { width: '100%', padding: '0.6rem 0.875rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
 
   return (
     <div>
@@ -1011,16 +1011,16 @@ function ActivityTab() {
         <select
           value={actionFilter}
           onChange={e => setActionFilter(e.target.value)}
-          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Nunito', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-primary)', background: 'white' }}
+          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-primary)', background: 'white' }}
         >
           {uniqueActions.map(a => (
             <option key={a} value={a}>{a === 'all' ? 'All actions' : ACTION_LABELS[a] || a}</option>
           ))}
         </select>
         <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} placeholder="From"
-          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Nunito', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }} />
+          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Fredoka', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }} />
         <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} placeholder="To"
-          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Nunito', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }} />
+          style={{ padding: '0.3rem 0.625rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', fontFamily: 'Fredoka', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }} />
         {(actionFilter !== 'all' || dateFrom || dateTo) && (
           <button onClick={() => { setActionFilter('all'); setDateFrom(''); setDateTo(''); }}
             style={{ padding: '0.3rem 0.625rem', border: 'none', background: 'var(--cream)', borderRadius: '0.4rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', color: 'var(--text-muted)' }}>
@@ -1146,7 +1146,7 @@ function ContentManager<T extends { id: string; active?: boolean }>({ storageKey
                 {f.type === 'toggle' ? (
                   <input type="checkbox" checked={!!form[f.key]} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.checked }))} style={{ width: 18, height: 18 }} />
                 ) : f.type === 'textarea' ? (
-                  <textarea value={String(form[f.key] ?? '')} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))} rows={3} style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem', resize: 'vertical' }} />
+                  <textarea value={String(form[f.key] ?? '')} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))} rows={3} style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.875rem', resize: 'vertical' }} />
                 ) : f.type === 'select' ? (
                   <select value={String(form[f.key] ?? '')} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontSize: '0.875rem' }}>
                     {f.options?.map(o => <option key={o} value={o}>{o}</option>)}
@@ -1539,7 +1539,7 @@ function SettingsTab({ toast }: { toast: ToastFn }) {
     setSavingStock(false);
   };
 
-  const inputStyle: CSSProperties = { padding: '0.55rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' as const };
+  const inputStyle: CSSProperties = { padding: '0.55rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' as const };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 520 }}>
@@ -1693,7 +1693,7 @@ export default function Admin() {
       <header style={{ background: 'var(--maroon)', padding: '0 1.5rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
           <img src="/tiggy.png" alt="Tiggy" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--gold)', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1rem', color: 'white', lineHeight: 1.1 }}>
+          <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1rem', color: 'white', lineHeight: 1.1 }}>
             Tiggy's<br /><span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.1em' }}>KINGDOM</span>
           </span>
           <span style={{ color: 'rgba(255,255,255,0.35)', margin: '0 0.1rem', fontSize: '1.1rem' }}>|</span>

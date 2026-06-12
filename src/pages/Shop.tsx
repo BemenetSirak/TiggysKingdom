@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -95,7 +95,7 @@ function BookCover({ product }: { product: Product }) {
       {/* Title */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0.25rem 0', zIndex: 1 }}>
         <p style={{
-          color: 'white', fontFamily: 'Playfair Display, serif', fontWeight: 700,
+          color: 'white', fontFamily: 'Fraunces, serif', fontWeight: 700,
           fontSize: '0.52rem', lineHeight: 1.35, margin: 0, textAlign: 'center',
           display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           textShadow: '0 1px 3px rgba(0,0,0,0.4)',
@@ -177,7 +177,7 @@ function ProductCard({ product, onAddToCart }: { product: Product; onAddToCart: 
           <StarRating rating={product.rating} />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>({product.sold || product.reviews || 0})</span>
         </div>
-        <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: 0, lineHeight: 1.3 }}>
+        <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: 0, lineHeight: 1.3 }}>
           <Link to={`/shop/${product.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none' }}>
             {product.title}
           </Link>
@@ -297,8 +297,8 @@ export default function Shop() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, var(--gold-pale), #FDE68A)', padding: '3rem 1.25rem', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-          <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+          <img src="/tiggy.png" alt="Tiggy" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
             Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
           </span>
         </div>
@@ -327,7 +327,7 @@ export default function Shop() {
           <select
             value={sort}
             onChange={e => setSort(e.target.value)}
-            style={{ padding: '0.75rem 1rem', border: '2px solid var(--cream-border)', borderRadius: '0.75rem', fontFamily: 'Nunito, sans-serif', fontWeight: 700, color: 'var(--text-primary)', background: 'white', cursor: 'pointer', outline: 'none' }}
+            style={{ padding: '0.75rem 1rem', border: '2px solid var(--cream-border)', borderRadius: '0.75rem', fontFamily: 'Fredoka, sans-serif', fontWeight: 700, color: 'var(--text-primary)', background: 'white', cursor: 'pointer', outline: 'none' }}
           >
             {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 
 interface EmptyStateProps {
   title?: string;
@@ -24,7 +24,7 @@ export default function EmptyState({ title, message, action, icon }: EmptyStateP
         }
       </div>
       {title && (
-        <h3 style={{ fontFamily: 'Playfair Display, serif', color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>
+        <h3 style={{ fontFamily: 'Fraunces, serif', color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>
           {title}
         </h3>
       )}

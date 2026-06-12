@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ReactNode, FormEvent } from 'react';
+﻿import { useState, useRef, useEffect, ReactNode, FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -159,8 +159,8 @@ export default function Layout({ children }: { children: ReactNode }) {
               <img src="/tiggy.png" alt="Tiggy" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '50%' }} />
             </div>
             <div style={{ lineHeight: 1 }}>
-              <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.25rem', color: '#1B2A4A', letterSpacing: '-0.02em', WebkitTextStroke: '0.4px #1B2A4A' }}>Tiggy's Kingdom</div>
-              <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.58rem', color: '#C9A227', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.15rem' }}>Play · Learn · Grow with God</div>
+              <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 900, fontSize: '1.25rem', color: '#1A4FA0', letterSpacing: '-0.01em' }}>Tiggy's Kingdom</div>
+              <div style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '0.58rem', color: '#C9A227', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.15rem' }}>Play · Learn · Grow with God</div>
             </div>
           </Link>
 
@@ -173,6 +173,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 style={{
                   padding: '0.45rem 0.875rem',
                   borderRadius: '0.5rem',
+                  fontFamily: 'Fredoka, sans-serif',
                   fontWeight: 700,
                   fontSize: '0.875rem',
                   color: isActive(l.to) ? 'var(--maroon)' : 'var(--text-secondary)',
@@ -300,8 +301,8 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <img src="/tiggy.png" alt="Tiggy" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '50%' }} />
               </div>
               <div style={{ lineHeight: 1 }}>
-                <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.2rem', color: '#1B2A4A', letterSpacing: '-0.02em', WebkitTextStroke: '0.4px #1B2A4A' }}>Tiggy's Kingdom</div>
-                <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.56rem', color: '#C9A227', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.15rem' }}>Play · Learn · Grow with God</div>
+                <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 900, fontSize: '1.2rem', color: '#1A4FA0', letterSpacing: '-0.01em' }}>Tiggy's Kingdom</div>
+                <div style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '0.56rem', color: '#C9A227', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.15rem' }}>Play · Learn · Grow with God</div>
               </div>
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -315,7 +316,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 style={{
                   display: 'flex', alignItems: 'center', padding: '0.875rem 1.25rem',
                   borderRadius: '0.875rem', background: isActive(l.to) ? 'var(--gold-pale)' : 'transparent',
-                  color: 'var(--maroon)', fontWeight: 800, fontSize: '1.05rem',
+                  color: 'var(--maroon)', fontFamily: 'Fredoka, sans-serif', fontWeight: 800, fontSize: '1.05rem',
                 }}
               >
                 {l.label}
@@ -391,8 +392,8 @@ export default function Layout({ children }: { children: ReactNode }) {
                   <img src="/tiggy.png" alt="Tiggy" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '50%' }} />
                 </div>
                 <div style={{ lineHeight: 1 }}>
-                  <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.4rem', color: 'white', letterSpacing: '-0.02em', WebkitTextStroke: '0.4px white' }}>Tiggy's Kingdom</div>
-                  <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.62rem', color: '#F5C842', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.2rem' }}>Play · Learn · Grow with God</div>
+                  <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 900, fontSize: '1.4rem', color: 'white', letterSpacing: '-0.01em' }}>Tiggy's Kingdom</div>
+                  <div style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '0.62rem', color: '#F5C842', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.2rem' }}>Play · Learn · Grow with God</div>
                 </div>
               </Link>
               <p style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.65, margin: '0 0 1.5rem', maxWidth: 260 }}>
@@ -410,7 +411,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
             {FOOTER_COLS.map(col => (
               <div key={col.heading}>
-                <h4 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.8rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.9)', margin: '0 0 1rem', textTransform: 'uppercase' }}>
+                <h4 style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.8rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.9)', margin: '0 0 1rem', textTransform: 'uppercase' }}>
                   {col.heading}
                 </h4>
                 {col.links.map(l => (
@@ -426,7 +427,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
             {/* Subscribe column */}
             <div>
-              <h4 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.8rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.9)', margin: '0 0 0.625rem', textTransform: 'uppercase' }}>Subscribe</h4>
+              <h4 style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.8rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.9)', margin: '0 0 0.625rem', textTransform: 'uppercase' }}>Subscribe</h4>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, margin: '0 0 1rem', lineHeight: 1.6 }}>
                 Unlimited stories, activities &amp; parent guides — ad-free, always faithful.
               </p>

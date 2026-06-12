@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -325,7 +325,7 @@ export default function Dashboard() {
                     <input
                       value={newName}
                       onChange={e => setNewName(e.target.value)}
-                      style={{ padding: '0.45rem 0.75rem', border: '2px solid var(--gold)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.9rem', outline: 'none' }}
+                      style={{ padding: '0.45rem 0.75rem', border: '2px solid var(--gold)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '0.9rem', outline: 'none' }}
                       autoFocus
                       onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditName(false); }}
                     />
@@ -365,7 +365,7 @@ export default function Dashboard() {
                         placeholder={label}
                         value={vals[i]}
                         onChange={e => setters[i](e.target.value)}
-                        style={{ padding: '0.5rem 0.75rem', border: '2px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontWeight: 600, fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                        style={{ padding: '0.5rem 0.75rem', border: '2px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontWeight: 600, fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }}
                         onFocus={e => { e.currentTarget.style.borderColor = 'var(--gold)'; }}
                         onBlur={e => { e.currentTarget.style.borderColor = 'var(--cream-border)'; }}
                       />

@@ -1,4 +1,4 @@
-/// <reference types="vite/client" />
+﻿/// <reference types="vite/client" />
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -218,7 +218,7 @@ function TiggyThumbnail() {
       <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(201,146,42,0.7)' }}>
         <img src="/tiggy.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
-      <p style={{ color: '#FEF3C7', fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '0.82rem', margin: 0, textAlign: 'center' }}>Tiggy's Kingdom</p>
+      <p style={{ color: '#FEF3C7', fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '0.82rem', margin: 0, textAlign: 'center' }}>Tiggy's Kingdom</p>
       <span style={{ background: 'var(--gold)', color: 'white', borderRadius: '0.3rem', padding: '0.1rem 0.5rem', fontSize: '0.6rem', fontWeight: 900 }}>★ OFFICIAL CHANNEL</span>
     </div>
   );
@@ -307,7 +307,7 @@ function EpisodeCard({ video, index, badge, savedProgress, isResuming, isFavorit
       )}
 
       <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: 0, color: 'var(--text-primary)', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: 0, color: 'var(--text-primary)', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {video.title}
         </h3>
         {video.description && (
@@ -417,7 +417,7 @@ function ShortCard({ video }: { video: Video }) {
           <>
             <VideoEmbed videoId={video.id} startSeconds={0} onProgress={() => {}} mode="portrait" />
             <div style={{ padding: '0.65rem 0.875rem', background: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <p style={{ flex: 1, color: 'var(--text-primary)', fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '0.82rem', margin: 0, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ flex: 1, color: 'var(--text-primary)', fontFamily: 'Fredoka, sans-serif', fontWeight: 800, fontSize: '0.82rem', margin: 0, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {video.title}
               </p>
               <button
@@ -461,7 +461,7 @@ function ShortCard({ video }: { video: Video }) {
             <div style={{ padding: '0.625rem 0.875rem 0.75rem', background: 'white' }}>
               <p style={{
                 color: 'var(--text-primary)',
-                fontFamily: 'Nunito, sans-serif',
+                fontFamily: 'Fredoka, sans-serif',
                 fontWeight: 800,
                 fontSize: '0.82rem',
                 margin: 0,
@@ -678,7 +678,7 @@ export default function Lessons() {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem' }}>
             📺 The Watch Library
           </span>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.75rem, 4vw, 3rem)', margin: '0 0 0.75rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 'clamp(1.75rem, 4vw, 3rem)', margin: '0 0 0.75rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
             Stories to <span style={{ color: '#C9A227' }}>play</span> &amp; watch together
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, margin: 0, lineHeight: 1.7, fontSize: '1rem' }}>

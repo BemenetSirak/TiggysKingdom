@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth, type OrderActivity } from '../context/AuthContext';
@@ -171,7 +171,7 @@ export default function Cart() {
 
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: '0 0 0.25rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 800, fontSize: '0.95rem', margin: '0 0 0.25rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.title}
                   </h3>
                   <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -243,7 +243,7 @@ export default function Cart() {
                       value={promoInput}
                       onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoError(''); }}
                       onKeyDown={e => { if (e.key === 'Enter') handleApplyPromo(); }}
-                      style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.85rem', outline: 'none', letterSpacing: '0.05em' }}
+                      style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '0.85rem', outline: 'none', letterSpacing: '0.05em' }}
                     />
                     <button
                       onClick={handleApplyPromo}

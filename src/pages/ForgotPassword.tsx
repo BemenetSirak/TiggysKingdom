@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type CSSProperties } from 'react';
+﻿import { useState, type FormEvent, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 
@@ -72,7 +72,7 @@ export default function ForgotPassword() {
     }
   };
 
-  const inputStyle: CSSProperties = { width: '100%', padding: '0.75rem 1rem', border: '2px solid var(--cream-border)', borderRadius: '0.75rem', fontFamily: 'Nunito, sans-serif', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' };
+  const inputStyle: CSSProperties = { width: '100%', padding: '0.75rem 1rem', border: '2px solid var(--cream-border)', borderRadius: '0.75rem', fontFamily: 'Fredoka, sans-serif', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' };
 
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.25rem', background: 'var(--cream)' }}>
@@ -80,7 +80,7 @@ export default function ForgotPassword() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', textDecoration: 'none' }}>
             <img src="/tiggy.png" alt="Tiggy" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
-            <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.25rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.25rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
               Tiggy's<br /><span style={{ fontSize: '0.82rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
             </span>
           </Link>

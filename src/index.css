@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Nunito:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,600;1,9..144,700&family=Fredoka:wght@300..700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -67,13 +67,13 @@
 
 body {
   background-color: var(--cream);
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Fredoka', sans-serif;
   color: var(--text-primary);
   margin: 0;
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
 }
 
 a {
@@ -83,7 +83,7 @@ a {
 
 button {
   cursor: pointer;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Fredoka', sans-serif;
 }
 
 /* ---- Buttons ---- */
@@ -92,6 +92,7 @@ button {
   color: white;
   padding: 0.75rem 1.75rem;
   border-radius: 9999px;
+  font-family: 'Fredoka', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   border: none;
@@ -107,6 +108,7 @@ button {
   color: white;
   padding: 0.75rem 1.75rem;
   border-radius: 9999px;
+  font-family: 'Fredoka', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   border: none;
@@ -122,6 +124,7 @@ button {
   color: white;
   padding: 0.75rem 1.75rem;
   border-radius: 9999px;
+  font-family: 'Fredoka', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   border: none;
@@ -137,6 +140,7 @@ button {
   color: var(--maroon);
   padding: 0.7rem 1.75rem;
   border-radius: 9999px;
+  font-family: 'Fredoka', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   border: 2px solid var(--maroon);
@@ -166,7 +170,7 @@ button {
   padding: 0.75rem 1rem;
   border: 2px solid var(--cream-border);
   border-radius: 0.75rem;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Fredoka', sans-serif;
   font-size: 1rem;
   background: white;
   color: var(--text-primary);
@@ -204,7 +208,7 @@ button {
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 800;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Fredoka', sans-serif;
 }
 
 /* ---- Toast animations ---- */

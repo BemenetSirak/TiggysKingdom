@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -57,7 +57,7 @@ function BigBookCover({ product }: { product: Product }) {
       <span style={{ fontSize: '1.75rem', opacity: 0.9, zIndex: 1 }}>{icon}</span>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0.4rem 0', zIndex: 1 }}>
         <p style={{
-          color: 'white', fontFamily: 'Playfair Display, serif', fontWeight: 700,
+          color: 'white', fontFamily: 'Fraunces, serif', fontWeight: 700,
           fontSize: '0.82rem', lineHeight: 1.4, margin: 0, textAlign: 'center',
           display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           textShadow: '0 1px 4px rgba(0,0,0,0.4)',
@@ -197,7 +197,7 @@ export default function ShopProduct() {
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 {CATEGORY_LABELS[product.category] || product.category}
               </span>
-              <h1 style={{ fontFamily: 'Playfair Display, serif', color: 'var(--maroon)', fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', margin: '0.35rem 0 0', lineHeight: 1.2 }}>
+              <h1 style={{ fontFamily: 'Fraunces, serif', color: 'var(--maroon)', fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', margin: '0.35rem 0 0', lineHeight: 1.2 }}>
                 {product.title}
               </h1>
               {product.author && (

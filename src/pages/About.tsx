@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -31,13 +31,13 @@ export default function About() {
       {/* ── Hero ── */}
       <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
-          <div className="tiggy-float" style={{ width: 130, height: 145, margin: '0 auto 1.25rem' }}>
-            <img src="/tiggy-wave.png" alt="Tiggy waving" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+          <div style={{ width: 160, height: 160, margin: '0 auto 1.25rem', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 8px 24px rgba(107,32,32,0.18)' }}>
+            <img src="/tiggy%20mission.jpg" alt="Tiggy on a mission" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-wave.png'; }} />
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
             ✦ Our Mission
           </span>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
             Why we made <span style={{ color: '#D4691D' }}>Tiggy</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: 0, fontSize: '1.05rem' }}>
@@ -49,7 +49,7 @@ export default function About() {
       {/* ── Story section ── */}
       <section style={{ background: 'var(--cream)', padding: '3rem 1.25rem' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.2rem', color: '#1B2A4A', lineHeight: 1.8, margin: '0 0 2rem', borderLeft: '4px solid var(--gold)', paddingLeft: '1.5rem' }}>
+          <p style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: '1.2rem', color: '#1B2A4A', lineHeight: 1.8, margin: '0 0 2rem', borderLeft: '4px solid var(--gold)', paddingLeft: '1.5rem' }}>
             We were tired of choosing between screens that taught our children nothing and screens that quietly taught them things we didn't believe.
           </p>
 
@@ -62,7 +62,7 @@ export default function About() {
           </p>
 
           <div style={{ background: '#1B2A4A', borderRadius: '1.25rem', padding: '2rem 2.5rem', marginBottom: '2.5rem' }}>
-            <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', fontSize: '1.25rem', color: 'white', lineHeight: 1.7, margin: 0, textAlign: 'center' }}>
+            <p style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: '1.25rem', color: 'white', lineHeight: 1.7, margin: 0, textAlign: 'center' }}>
               "We wanted screen time to draw our children closer to Christ — not pull them away."
             </p>
           </div>
@@ -82,13 +82,13 @@ export default function About() {
       {/* ── Educational goals ── */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>WHAT WE'RE BUILDING TOWARD</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>WHAT WE'RE BUILDING TOWARD</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: '#1B2A4A' }}>Our educational goals</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {GOALS.map(g => (
               <div key={g.title} className="card" style={{ padding: '1.75rem', background: 'white' }}>
                 <div style={{ fontSize: '1.75rem', marginBottom: '0.875rem' }}>{g.icon}</div>
-                <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1rem', margin: '0 0 0.5rem', color: '#1B2A4A' }}>{g.title}</h3>
+                <h3 style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1rem', margin: '0 0 0.5rem', color: '#1B2A4A' }}>{g.title}</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.65, fontWeight: 600, margin: 0, fontSize: '0.9rem' }}>{g.desc}</p>
               </div>
             ))}
@@ -105,12 +105,12 @@ export default function About() {
             </div>
           </div>
           <div>
-            <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>A NOTE FROM THE FAMILY</p>
+            <p style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>A NOTE FROM THE FAMILY</p>
             <h2 style={{ color: '#1B2A4A', fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)', margin: '0 0 1.25rem', lineHeight: 1.2 }}>From our home to yours</h2>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, fontWeight: 600, margin: '0 0 1.25rem', fontSize: '0.975rem' }}>
               Tiggy's Kingdom is made by a small Orthodox family with the help of artists and storytellers who share our faith. We make every story as if our own children were watching — because they are. Thank you for welcoming Tiggy into your home.
             </p>
-            <p style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic', color: 'var(--gold-dark)', fontWeight: 600, margin: 0, fontSize: '1.05rem' }}>
+            <p style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', color: 'var(--gold-dark)', fontWeight: 600, margin: 0, fontSize: '1.05rem' }}>
               — The Tiggy's Kingdom family ✦
             </p>
           </div>
@@ -121,8 +121,8 @@ export default function About() {
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 580, margin: '0 auto' }}>
           <div className="card" style={{ padding: '2.5rem', textAlign: 'center', background: 'white' }}>
-            <div style={{ width: 110, height: 120, margin: '0 auto 1rem', overflow: 'hidden' }}>
-              <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+            <div style={{ width: 110, height: 120, margin: '0 auto 1rem', overflow: 'hidden', borderRadius: '1rem' }}>
+              <img src="/tiggy%20mail.jpg" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-cheer.png'; }} />
             </div>
             <h2 style={{ fontSize: 'clamp(1.35rem, 3vw, 1.75rem)', margin: '0 0 0.75rem', color: '#1B2A4A' }}>Walk with us 🐑</h2>
             <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.65, margin: '0 0 1.75rem', fontSize: '0.95rem' }}>

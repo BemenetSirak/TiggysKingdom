@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -86,7 +86,7 @@ function QuizSection() {
   return (
     <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
-        <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>TRY IT NOW</p>
+        <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>TRY IT NOW</p>
         <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 2.5rem', color: '#1B2A4A' }}>A little saint quiz</h2>
 
         {done ? (
@@ -103,7 +103,7 @@ function QuizSection() {
             <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 1rem' }}>
               Question {qIndex + 1} of {questions.length}
             </p>
-            <h3 style={{ color: '#1B2A4A', fontSize: '1.1rem', lineHeight: 1.5, margin: '0 0 1.5rem', fontFamily: 'Nunito, sans-serif', fontWeight: 800 }}>
+            <h3 style={{ color: '#1B2A4A', fontSize: '1.1rem', lineHeight: 1.5, margin: '0 0 1.5rem', fontFamily: 'Fredoka, sans-serif', fontWeight: 800 }}>
               {q.question}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
@@ -118,7 +118,7 @@ function QuizSection() {
                     background: bg, border, color, borderRadius: '0.75rem',
                     padding: '0.875rem 1.25rem', fontWeight: 700, fontSize: '0.95rem',
                     cursor: selected !== null ? 'default' : 'pointer',
-                    textAlign: 'left', transition: 'all 0.15s', fontFamily: 'Nunito, sans-serif',
+                    textAlign: 'left', transition: 'all 0.15s', fontFamily: 'Fredoka, sans-serif',
                   }}>
                     {opt}
                     {selected !== null && i === q.correctIndex && <span style={{ float: 'right' }}>✓</span>}
@@ -163,13 +163,13 @@ export default function Activities() {
       {/* ── Hero ── */}
       <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <div className="tiggy-float" style={{ width: 130, height: 145, margin: '0 auto 1.25rem' }}>
-            <img src="/tiggy-wave.png" alt="Tiggy waving" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+          <div style={{ width: 160, height: 160, margin: '0 auto 1.25rem', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 8px 24px rgba(107,32,32,0.18)' }}>
+            <img src="/tiggy%20activities.jpg" alt="Tiggy activities" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: '#C0392B', marginBottom: '1.25rem' }}>
             🎨 Activities for Kids
           </span>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
             Let's <span style={{ color: '#C0392B' }}>play</span> and <span style={{ color: '#2E8B57' }}>learn</span> with Tiggy!
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: 0, fontSize: '1.05rem' }}>
@@ -190,7 +190,7 @@ export default function Activities() {
                 <div style={{ width: 48, height: 48, borderRadius: '0.875rem', background: `${a.ctaColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: '1rem' }}>
                   {a.icon}
                 </div>
-                <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.05rem', margin: '0 0 0.625rem', color: '#1B2A4A' }}>{a.title}</h3>
+                <h3 style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.05rem', margin: '0 0 0.625rem', color: '#1B2A4A' }}>{a.title}</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.65, fontWeight: 600, margin: '0 0 1rem', fontSize: '0.9rem' }}>{a.desc}</p>
                 <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
                   {a.tags.map(tag => (
@@ -198,7 +198,7 @@ export default function Activities() {
                   ))}
                 </div>
                 <button
-                  style={{ background: 'none', border: 'none', padding: 0, color: a.ctaColor, fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Nunito, sans-serif' }}
+                  style={{ background: 'none', border: 'none', padding: 0, color: a.ctaColor, fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Fredoka, sans-serif' }}
                   onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'}
                   onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'}
                   onClick={() => addToast(`"${a.title}" — coming soon!`, 'info')}
@@ -218,7 +218,7 @@ export default function Activities() {
       <section style={{ background: '#1B2A4A', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '3rem', alignItems: 'center' }}>
           <div>
-            <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>DRAW WITH TIGGY</p>
+            <p style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.75rem' }}>DRAW WITH TIGGY</p>
             <h2 style={{ color: 'white', fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)', margin: '0 0 1.25rem', lineHeight: 1.2 }}>
               Grab a pencil — let's draw together!
             </h2>
@@ -248,7 +248,7 @@ export default function Activities() {
           <div className="card" style={{ padding: '2.5rem', background: 'white', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', alignItems: 'center' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ maxWidth: 140, margin: '0 auto' }}>
-                <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', objectFit: 'contain' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+                <img src="/tiggy%20mail.jpg" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-cheer.png'; }} />
               </div>
             </div>
             <div>

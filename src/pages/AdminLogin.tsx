@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API } from '../lib/api';
 
@@ -40,7 +40,7 @@ export default function AdminLogin() {
     padding: '0.75rem 1rem',
     border: `2px solid ${hasError ? '#EF4444' : 'var(--cream-border)'}`,
     borderRadius: '0.75rem',
-    fontFamily: 'Nunito, sans-serif',
+    fontFamily: 'Fredoka, sans-serif',
     fontSize: '1rem',
     background: 'white',
     color: 'var(--text-primary)',
@@ -57,7 +57,7 @@ export default function AdminLogin() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', textDecoration: 'none' }}>
             <img src="/tiggy.png" alt="Tiggy" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
-            <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.25rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
+            <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.25rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
               Tiggy's<br /><span style={{ fontSize: '0.82rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
             </span>
           </Link>

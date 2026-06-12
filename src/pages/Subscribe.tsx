@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -38,7 +38,7 @@ function getGuideFiles(): GuideFilesMap {
 const FAQS = [
   {
     q: 'Is this safe for my child?',
-    a: 'Yes. Everything is ad-safe, free of frightening imagery, and reviewed for gentleness. There are no autoplay rabbit holes, no comments, and no links that lead children away from our content. What you press play on is exactly what they see.',
+    a: 'Yes. Everything is ad-free, free of frightening imagery, and reviewed for gentleness. There are no autoplay rabbit holes, no comments, and no links that lead children away from our content. What you press play on is exactly what they see.',
   },
   {
     q: 'Is this spiritually trustworthy?',
@@ -78,7 +78,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       onClick={() => setOpen(o => !o)}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-        <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: '1rem', margin: 0, color: '#1B2A4A', lineHeight: 1.4, flex: 1 }}>{q}</h3>
+        <h3 style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 800, fontSize: '1rem', margin: 0, color: '#1B2A4A', lineHeight: 1.4, flex: 1 }}>{q}</h3>
         <span style={{ color: 'var(--text-muted)', fontSize: '1.1rem', flexShrink: 0, marginTop: 2 }}>{open ? '▲' : '▼'}</span>
       </div>
       {open && <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0.875rem 0 0', fontSize: '0.9rem' }}>{a}</p>}
@@ -109,14 +109,14 @@ export default function Subscribe() {
       {/* ── Hero ── */}
       <section style={{ background: 'var(--cream)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <div className="tiggy-float" style={{ width: 130, height: 145, margin: '0 auto 1.25rem' }}>
-            <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(107,32,32,0.18))' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+          <div style={{ width: 160, height: 160, margin: '0 auto 1.25rem', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 8px 24px rgba(201,146,42,0.2)' }}>
+            <img src="/tiggy%20mail.jpg" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-cheer.png'; }} />
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'white', border: '1.5px solid var(--cream-border)', borderRadius: '9999px', padding: '0.3rem 0.875rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
             👨‍👩‍👧 The Parent Corner
           </span>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
-            Made for parents you can <span style={{ color: '#3A7A30' }}>trust</span>
+          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: '0 0 1rem', color: '#1B2A4A', lineHeight: 1.1, fontWeight: 700 }}>
+            A home for <span style={{ color: '#3A7A30' }}>Orthodox families</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.7, margin: 0, fontSize: '1.05rem' }}>
             You're the one who decides what your children watch and read. Here's everything you need to know about who we are and why families trust Tiggy's Kingdom.
@@ -127,7 +127,7 @@ export default function Subscribe() {
       {/* ── Subscription Plans ── */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1060, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>CHOOSE YOUR PLAN</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>CHOOSE YOUR PLAN</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 0.5rem', color: '#1B2A4A' }}>Simple, faithful access for your family</h2>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 auto 2.5rem', maxWidth: 480, lineHeight: 1.6 }}>
             No ads, no surprises — just Orthodox stories your children will love.
@@ -145,9 +145,9 @@ export default function Subscribe() {
                     <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 0.75rem', borderRadius: '50%', background: '#F0EBE0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                       <img src="/tiggy.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'grayscale(0.25) brightness(0.95)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                     </div>
-                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Free</p>
+                    <p style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Free</p>
                     <div style={{ marginBottom: '1rem' }}>
-                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$0</span>
+                      <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$0</span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
                     </div>
                     <button className="btn-outline-maroon" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Get Started</button>
@@ -160,9 +160,9 @@ export default function Subscribe() {
                       <img src="/tiggy.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'sepia(0.15) saturate(1.3) brightness(1.05)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                       <span style={{ position: 'absolute', top: 2, right: 4, fontSize: '0.9rem', lineHeight: 1 }}>👑</span>
                     </div>
-                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Kingdom Lamb</p>
+                    <p style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Kingdom Lamb</p>
                     <div style={{ marginBottom: '1rem' }}>
-                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$4.99</span>
+                      <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$4.99</span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
                     </div>
                     <button className="btn-gold" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Start Free Trial</button>
@@ -174,9 +174,9 @@ export default function Subscribe() {
                       <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'brightness(1.1)' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
                       <span style={{ position: 'absolute', top: 2, right: 2, fontSize: '0.85rem', lineHeight: 1 }}>✨</span>
                     </div>
-                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: 'white', margin: '0 0 0.25rem' }}>Royal Family</p>
+                    <p style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.05rem', color: 'white', margin: '0 0 0.25rem' }}>Royal Family</p>
                     <div style={{ marginBottom: '1rem' }}>
-                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: 'white' }}>$9.99</span>
+                      <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: 'white' }}>$9.99</span>
                       <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>/month</span>
                     </div>
                     <button className="btn-gold" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Start Free Trial</button>
@@ -188,9 +188,9 @@ export default function Subscribe() {
                       <img src="/tiggy.png" alt="Tiggy" style={{ width: 58, height: 58, objectFit: 'contain', filter: 'hue-rotate(220deg) saturate(0.6) brightness(0.95)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                       <span style={{ position: 'absolute', top: 2, right: 4, fontSize: '0.85rem', lineHeight: 1 }}>🕊️</span>
                     </div>
-                    <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Monastery</p>
+                    <p style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.05rem', color: '#1B2A4A', margin: '0 0 0.25rem' }}>Monastery</p>
                     <div style={{ marginBottom: '1rem' }}>
-                      <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$29.99</span>
+                      <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$29.99</span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
                     </div>
                     <button className="btn-maroon" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Subscribe Now</button>
@@ -226,7 +226,7 @@ export default function Subscribe() {
           </div>
 
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', marginTop: '1.25rem' }}>
-            30-day money-back guarantee · Secure payment · Cancel any time
+            30-day money-back guarantee · Secure payment · Cancel anytime
           </p>
         </div>
       </section>
@@ -234,7 +234,7 @@ export default function Subscribe() {
       {/* ── FAQ ── */}
       <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>YOUR HONEST QUESTIONS</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>YOUR HONEST QUESTIONS</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 2.5rem', color: '#1B2A4A' }}>The three things parents ask us most</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
             {FAQS.map(faq => <FaqItem key={faq.q} q={faq.q} a={faq.a} />)}
@@ -245,13 +245,13 @@ export default function Subscribe() {
       {/* ── Promises (dark navy) ── */}
       <section style={{ background: '#1B2A4A', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>SAFETY & VALUES</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: '#5BB8A0', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>SAFETY & VALUES</p>
           <h2 style={{ textAlign: 'center', color: 'white', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem' }}>Our promises to your family</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
             {PROMISES.map(p => (
               <div key={p.title} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '1.25rem', padding: '2rem 1.75rem', textAlign: 'center' }}>
                 <div style={{ fontSize: '2.25rem', marginBottom: '1rem' }}>{p.icon}</div>
-                <h3 style={{ color: 'white', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1rem', margin: '0 0 0.625rem' }}>{p.title}</h3>
+                <h3 style={{ color: 'white', fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1rem', margin: '0 0 0.625rem' }}>{p.title}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500, lineHeight: 1.65, margin: 0, fontSize: '0.875rem' }}>{p.desc}</p>
               </div>
             ))}
@@ -262,14 +262,14 @@ export default function Subscribe() {
       {/* ── What children take away ── */}
       <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>EDUCATIONAL BENEFITS</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>EDUCATIONAL BENEFITS</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: '#1B2A4A' }}>What children take away</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
             {BENEFITS.map(b => (
               <div key={b.title} className="card" style={{ padding: '1.5rem', background: 'white', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                 <div style={{ width: 40, height: 40, borderRadius: '0.75rem', background: 'var(--cream-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', flexShrink: 0 }}>{b.icon}</div>
                 <div>
-                  <h3 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.95rem', margin: '0 0 0.4rem', color: '#1B2A4A' }}>{b.title}</h3>
+                  <h3 style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '0.95rem', margin: '0 0 0.4rem', color: '#1B2A4A' }}>{b.title}</h3>
                   <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontWeight: 600, margin: 0, fontSize: '0.875rem' }}>{b.desc}</p>
                 </div>
               </div>
@@ -281,7 +281,7 @@ export default function Subscribe() {
       {/* ── Screen-time philosophy ── */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>OUR SCREEN-TIME PHILOSOPHY</p>
+          <p style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>OUR SCREEN-TIME PHILOSOPHY</p>
           <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 1.5rem', color: '#1B2A4A' }}>Less screen, more meaning</h2>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, fontWeight: 600, fontSize: '1rem', margin: 0 }}>
             We don't want your children watching for hours. We want a short, beautiful story that sparks a conversation, a prayer, or a craft — and then the screen goes off. Our episodes are made to be a starting point for real family time, not a babysitter. That's why every story comes with a parent guide and an activity to carry the moment off the screen and into your home.
@@ -292,7 +292,7 @@ export default function Subscribe() {
       {/* ── Parent & teacher resources ── */}
       <section style={{ background: 'var(--cream)', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FOR GROWN-UPS</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FOR GROWN-UPS</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 0.75rem', color: '#1B2A4A' }}>Parent guides &amp; teacher resources</h2>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 auto 3rem', maxWidth: 480, lineHeight: 1.6 }}>
             Free tools to help you bring each story to life at home or in the classroom.
@@ -303,7 +303,7 @@ export default function Subscribe() {
               return (
                 <div key={g.id} className="card" style={{ padding: '2rem', background: 'white', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ width: 52, height: 52, borderRadius: '0.875rem', background: 'var(--cream-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: '1.25rem' }}>{g.icon}</div>
-                  <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', margin: '0 0 0.625rem', color: '#1B2A4A' }}>{g.title}</h3>
+                  <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '1.2rem', margin: '0 0 0.625rem', color: '#1B2A4A' }}>{g.title}</h3>
                   <p style={{ color: 'var(--text-muted)', lineHeight: 1.65, fontWeight: 600, margin: '0 0 1.25rem', fontSize: '0.875rem', flex: 1 }}>{g.desc}</p>
                   {file ? (
                     <a
@@ -311,13 +311,13 @@ export default function Subscribe() {
                       download={file.name}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'var(--maroon)', color: 'white', borderRadius: '0.5rem', padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.875rem', textDecoration: 'none', fontFamily: 'Nunito, sans-serif', width: 'fit-content' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'var(--maroon)', color: 'white', borderRadius: '0.5rem', padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.875rem', textDecoration: 'none', fontFamily: 'Fredoka, sans-serif', width: 'fit-content' }}
                     >
                       ↓ {g.cta}
                     </a>
                   ) : (
                     <button
-                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-muted)', fontWeight: 800, fontSize: '0.875rem', cursor: 'default', fontFamily: 'Nunito, sans-serif', textAlign: 'left' }}
+                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-muted)', fontWeight: 800, fontSize: '0.875rem', cursor: 'default', fontFamily: 'Fredoka, sans-serif', textAlign: 'left' }}
                       onClick={() => addToast(`"${g.title}" — coming soon!`, 'info')}
                     >
                       {g.cta}
@@ -333,7 +333,7 @@ export default function Subscribe() {
       {/* ── Testimonials ── */}
       <section style={{ background: '#F5F0E8', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FROM OUR FAMILIES</p>
+          <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>FROM OUR FAMILIES</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: '#1B2A4A' }}>
             Trusted by parents, priests &amp; teachers
           </h2>
@@ -364,7 +364,7 @@ export default function Subscribe() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '2rem', alignItems: 'center' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ maxWidth: 130, margin: '0 auto' }}>
-                  <img src="/tiggy-cheer.png" alt="Tiggy" style={{ width: '100%', objectFit: 'contain' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy.png'; }} />
+                  <img src="/tiggy%20mail.jpg" alt="Tiggy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0.75rem' }} onError={e => { (e.currentTarget as HTMLImageElement).src = '/tiggy-cheer.png'; }} />
                 </div>
               </div>
               <div>
@@ -372,7 +372,7 @@ export default function Subscribe() {
                   Join Tiggy's Kingdom Mail ✉
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.65, margin: '0 0 1.25rem', fontSize: '0.875rem' }}>
-                  Faith-filled fun every week. New subscribers get a <strong>free mini saint-story ebook</strong> and a <strong>printable coloring pack</strong> — plus weekly feast reminders and new episode starts.
+                  Faith-filled fun every week. New subscribers get a <strong>free mini saint-story ebook</strong> and a <strong>printable coloring pack</strong> — plus weekly feast reminders and new episode alerts.
                 </p>
                 <form onSubmit={handleSubscribe} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email address" className="tk-input" required />

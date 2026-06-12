@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+﻿import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -44,7 +44,7 @@ function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast:
             alignItems: 'center',
             gap: '0.75rem',
             boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-            fontFamily: 'Nunito, sans-serif',
+            fontFamily: 'Fredoka, sans-serif',
             fontWeight: 700,
             fontSize: '0.95rem',
           }}
