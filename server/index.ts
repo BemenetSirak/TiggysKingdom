@@ -103,7 +103,10 @@ const emailOrderConfirmation = (order: OrderRow) => {
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || origin === CLIENT_ORIGIN || origin.startsWith('http://localhost')) cb(null, true);
+    if (!origin) cb(null, true);
+    else if (origin === CLIENT_ORIGIN) cb(null, true);
+    else if (origin.startsWith('http://localhost')) cb(null, true);
+    else if (origin.endsWith('.vercel.app')) cb(null, true);
     else cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
