@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import EmptyState from '../components/EmptyState';
 import GuestBanner from '../components/GuestBanner';
@@ -97,7 +98,16 @@ function playlistIcon(title: string): string {
   return '✦';
 }
 
-type Filter = string; // 'all' | 'shorts' | playlist title
+type Filter = string; // 'all' | 'shorts' | 'watchLater' | playlist title
+
+// ── Watch Later helpers ───────────────────────────────────────────────────────
+const WL_KEY = (uid: string) => `tk_watch_later_${uid}`;
+function getWatchLater(uid: string): { id: string; title: string }[] {
+  try { return JSON.parse(localStorage.getItem(WL_KEY(uid)) || '[]'); } catch { return []; }
+}
+function saveWatchLater(uid: string, list: { id: string; title: string }[]) {
+  try { localStorage.setItem(WL_KEY(uid), JSON.stringify(list)); } catch {}
+}
 
 interface Video {
   id: string;
@@ -225,15 +235,17 @@ function TiggyThumbnail() {
 }
 
 // ── Episode card — used for All + Episodes tabs ───────────────────────────────
-function EpisodeCard({ video, index, badge, savedProgress, isResuming, isFavorited, onProgress, onToggleFavorite }: {
+function EpisodeCard({ video, index, badge, savedProgress, isResuming, isFavorited, isWatchLater, onProgress, onToggleFavorite, onToggleWatchLater }: {
   video: Video;
   index: number;
-  badge?: string;          // "Ep. N" | "SHORT" | undefined
+  badge?: string;
   savedProgress?: { timestamp: number; duration: number } | null;
   isResuming: boolean;
   isFavorited: boolean;
+  isWatchLater: boolean;
   onProgress: (video: Video, index: number, t: number, d: number) => void;
   onToggleFavorite: (video: Video) => void;
+  onToggleWatchLater: (video: Video) => void;
 }) {
   const [playing, setPlaying] = useState(isResuming);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -333,19 +345,26 @@ function EpisodeCard({ video, index, badge, savedProgress, isResuming, isFavorit
             </button>
             <button
               onClick={() => onToggleFavorite(video)}
-              title={isFavorited ? 'Remove from favorites' : 'Save to favorites'}
-              style={{ background: isFavorited ? '#FEF3C7' : 'var(--cream-dark)', color: isFavorited ? '#C9922A' : 'var(--text-secondary)', border: isFavorited ? '1.5px solid #C9922A' : 'none', borderRadius: '0.75rem', padding: '0.5rem 0.65rem', cursor: 'pointer', fontSize: '1rem', flexShrink: 0, transition: 'all 0.15s' }}
+              title={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
+              style={{ background: isFavorited ? '#FEF3C7' : 'var(--cream-dark)', color: isFavorited ? '#C9922A' : 'var(--text-muted)', border: isFavorited ? '1.5px solid #C9922A' : '1.5px solid transparent', borderRadius: '0.75rem', padding: '0.5rem 0.65rem', cursor: 'pointer', fontSize: '1rem', flexShrink: 0, transition: 'all 0.15s' }}
             >
               {isFavorited ? '♥' : '♡'}
+            </button>
+            <button
+              onClick={() => onToggleWatchLater(video)}
+              title={isWatchLater ? 'Remove from Watch Later' : 'Watch Later'}
+              style={{ background: isWatchLater ? '#EDE9FE' : 'var(--cream-dark)', color: isWatchLater ? '#7C3AED' : 'var(--text-muted)', border: isWatchLater ? '1.5px solid #7C3AED' : '1.5px solid transparent', borderRadius: '0.75rem', padding: '0.5rem 0.65rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, flexShrink: 0, transition: 'all 0.15s' }}
+            >
+              {isWatchLater ? '✓' : '🕐'}
             </button>
             <button
               onClick={() => {
                 const url = `https://www.youtube.com/watch?v=${video.id}`;
                 if (navigator.share) { navigator.share({ title: video.title, url }); }
-                else { navigator.clipboard.writeText(url).then(() => alert('Link copied!')); }
+                else { navigator.clipboard.writeText(url).then(() => {}); }
               }}
               title="Share"
-              style={{ background: 'var(--cream-dark)', color: 'var(--text-secondary)', border: 'none', borderRadius: '0.75rem', padding: '0.5rem 0.65rem', cursor: 'pointer', fontSize: '1rem', flexShrink: 0 }}
+              style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', border: '1.5px solid transparent', borderRadius: '0.75rem', padding: '0.5rem 0.65rem', cursor: 'pointer', fontSize: '1rem', flexShrink: 0 }}
             >
               ↗
             </button>
@@ -518,6 +537,7 @@ export default function Lessons() {
   const [error, setError]               = useState<string | null>(null);
 
   const { user, saveVideoProgress, getVideoProgress, addFavorite, removeFavorite, getFavorites } = useAuth();
+  const { addToast } = useToast();
   const location    = useLocation();
   const resumeVideoId = location.state?.resumeVideoId;
 
@@ -629,8 +649,9 @@ export default function Lessons() {
     }
   }
 
-  const filteredVideos = filter === 'all'    ? allVideos
-                       : filter === 'shorts' ? allVideos.filter(videoIsShort)
+  const filteredVideos = filter === 'all'         ? allVideos
+                       : filter === 'shorts'      ? allVideos.filter(videoIsShort)
+                       : filter === 'watchLater'  ? allVideos.filter(v => watchLaterIds.has(v.id))
                        : allVideos.filter(v => (playlistMap[v.id] || []).includes(filter));
 
   const visibleVideos = filter === 'shorts' ? filteredVideos : filteredVideos.slice(0, displayCount);
@@ -643,12 +664,39 @@ export default function Lessons() {
     saveVideoProgress(user.id, { videoId: video.id, title: video.title, episodeNum: index + 1, timestamp, duration });
   };
 
-  const favoriteIds = new Set((user && !user.isGuest) ? getFavorites(user.id).map(f => f.id) : []);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
+    () => new Set((user && !user.isGuest) ? getFavorites(user.id).map(f => f.id) : [])
+  );
+  const [watchLaterIds, setWatchLaterIds] = useState<Set<string>>(
+    () => new Set((user && !user.isGuest) ? getWatchLater(user.id).map(v => v.id) : [])
+  );
 
   const handleToggleFavorite = (video: Video) => {
-    if (!user || user.isGuest) { alert('Sign in to save favorites.'); return; }
-    if (favoriteIds.has(video.id)) { removeFavorite(user.id, video.id); }
-    else { addFavorite(user.id, { id: video.id, title: video.title }); }
+    if (!user || user.isGuest) { addToast('Sign in to save favourites.', 'info'); return; }
+    setFavoriteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(video.id)) { removeFavorite(user.id, video.id); next.delete(video.id); addToast('Removed from favourites', 'info'); }
+      else { addFavorite(user.id, { id: video.id, title: video.title }); next.add(video.id); addToast('Added to favourites ♥', 'success'); }
+      return next;
+    });
+  };
+
+  const handleToggleWatchLater = (video: Video) => {
+    if (!user || user.isGuest) { addToast('Sign in to use Watch Later.', 'info'); return; }
+    setWatchLaterIds(prev => {
+      const next = new Set(prev);
+      const list = getWatchLater(user.id);
+      if (next.has(video.id)) {
+        saveWatchLater(user.id, list.filter(v => v.id !== video.id));
+        next.delete(video.id);
+        addToast('Removed from Watch Later', 'info');
+      } else {
+        saveWatchLater(user.id, [{ id: video.id, title: video.title }, ...list]);
+        next.add(video.id);
+        addToast('Saved to Watch Later 🕐', 'success');
+      }
+      return next;
+    });
   };
 
   const videosWithBadge = visibleVideos.map(v => ({
@@ -699,6 +747,7 @@ export default function Lessons() {
           // Build tab list: All + channel playlists (those with ≥1 matching video) + Shorts
           const tabs: { key: string; label: string; icon: string }[] = [
             { key: 'all', label: 'All Stories', icon: '✦' },
+            ...(watchLaterIds.size > 0 ? [{ key: 'watchLater', label: 'Watch Later', icon: '🕐' }] : []),
             ...playlists
               .filter(p => (catCounts[p.title] || 0) > 0)
               .map(p => ({ key: p.title, label: p.title, icon: playlistIcon(p.title) })),
@@ -768,8 +817,8 @@ export default function Lessons() {
         {/* ── Empty ── */}
         {!loading && !error && filteredVideos.length === 0 && (
           <EmptyState
-            title={filter === 'shorts' ? 'No shorts yet' : filter === 'all' ? 'No videos yet' : `No "${filter}" videos yet`}
-            message="Check back soon — new stories from Tiggy's Kingdom are on the way!"
+            title={filter === 'shorts' ? 'No shorts yet' : filter === 'all' ? 'No videos yet' : filter === 'watchLater' ? 'No Watch Later videos' : `No "${filter}" videos yet`}
+            message={filter === 'watchLater' ? 'Tap the 🕐 button on any episode to save it here.' : "Check back soon — new stories from Tiggy's Kingdom are on the way!"}
           />
         )}
 
@@ -786,8 +835,10 @@ export default function Lessons() {
                   isResuming={video.id === resumeVideoId}
                   savedProgress={user ? getVideoProgress(user.id, video.id) : null}
                   isFavorited={favoriteIds.has(video.id)}
+                  isWatchLater={watchLaterIds.has(video.id)}
                   onProgress={handleProgress}
                   onToggleFavorite={handleToggleFavorite}
+                  onToggleWatchLater={handleToggleWatchLater}
                 />
               ))}
             </div>
