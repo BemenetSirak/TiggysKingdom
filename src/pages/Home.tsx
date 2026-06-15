@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, type FormEvent } from 'react';
+﻿import { useState, useEffect, useMemo, type FormEvent } from 'react';
 
 function TiggyHero() {
   return (
@@ -23,7 +23,7 @@ const UPLOADS_PLAYLIST = CHANNEL_ID.replace(/^UC/, 'UU');
 const HOME_CACHE_KEY   = 'tk_yt_home_v2';
 const HOME_CACHE_TTL   = 6 * 60 * 60 * 1000;
 
-interface YTVideo { id: string; title: string; isShort: boolean; }
+interface YTVideo { id: string; title: string; isShort: boolean; viewCount: number; }
 
 function parseDuration(iso: string): number {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -63,26 +63,33 @@ export default function Home() {
         if (Date.now() - ts < HOME_CACHE_TTL) { setYtVideos(data); setYtLoading(false); return; }
       }
     } catch {}
-    // playlistItems = 1 quota unit; search = 100 units
-    fetch(`https://www.googleapis.com/youtube/v3/playlistItems?key=${YT_API_KEY}&playlistId=${UPLOADS_PLAYLIST}&part=contentDetails&maxResults=15`)
+    // playlistItems = 1 quota unit; videos.list = 1 quota unit
+    fetch(`https://www.googleapis.com/youtube/v3/playlistItems?key=${YT_API_KEY}&playlistId=${UPLOADS_PLAYLIST}&part=contentDetails&maxResults=30`)
       .then(r => r.json())
       .then(async data => {
         if (data.error || !data.items?.length) return;
         const ids = data.items.map((i: { contentDetails: { videoId: string } }) => i.contentDetails.videoId).join(',');
-        const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?key=${YT_API_KEY}&id=${ids}&part=snippet,contentDetails`);
+        const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?key=${YT_API_KEY}&id=${ids}&part=snippet,contentDetails,statistics`);
         const vData = await vRes.json();
         const mapped: YTVideo[] = (vData.items || []).map((v: {
           id: string;
           snippet: { title: string; description: string };
           contentDetails: { duration: string };
+          statistics: { viewCount?: string };
         }) => {
-          const dur     = parseDuration(v.contentDetails?.duration || '');
-          const title   = v.snippet.title || '';
-          const isShort = dur <= 60 || /\#shorts/i.test(title + ' ' + (v.snippet.description || ''));
-          return { id: v.id, title, isShort };
+          const dur      = parseDuration(v.contentDetails?.duration || '');
+          const title    = v.snippet.title || '';
+          const isShort  = dur <= 60 || /\#shorts/i.test(title + ' ' + (v.snippet.description || ''));
+          const viewCount = parseInt(v.statistics?.viewCount || '0', 10);
+          return { id: v.id, title, isShort, viewCount };
         });
-        try { localStorage.setItem(HOME_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: mapped })); } catch {}
-        setYtVideos(mapped);
+        // Keep top 12 non-shorts by view count as the featured pool
+        const pool = mapped
+          .filter(v => !v.isShort)
+          .sort((a, b) => b.viewCount - a.viewCount)
+          .slice(0, 12);
+        try { localStorage.setItem(HOME_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: pool })); } catch {}
+        setYtVideos(pool);
       })
       .catch(() => {})
       .finally(() => setYtLoading(false));
@@ -108,7 +115,11 @@ export default function Home() {
     setEmail('');
   };
 
-  const displayVideos = ytVideos.filter(v => !v.isShort).slice(0, 3);
+  // Shuffle the top-viewed pool on each page load so the selection changes every visit
+  const displayVideos = useMemo(
+    () => [...ytVideos].sort(() => Math.random() - 0.5).slice(0, 4),
+    [ytVideos] // re-shuffles once when data loads, then stable for the session
+  );
 
   return (
     <div>
@@ -205,8 +216,8 @@ export default function Home() {
           </div>
 
           {ytLoading && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-              {[...Array(3)].map((_, i) => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+              {[...Array(4)].map((_, i) => (
                 <div key={i} className="card" style={{ pointerEvents: 'none' }}>
                   <div className="skeleton" style={{ paddingTop: '56.25%' }} />
                   <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -219,7 +230,7 @@ export default function Home() {
           )}
 
           {!ytLoading && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
               {displayVideos.length > 0 ? displayVideos.map((v, idx) => {
                 const color = EP_COLORS[idx % EP_COLORS.length];
                 const isPlaying = playingId === v.id;
@@ -248,7 +259,8 @@ export default function Home() {
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.15)', transition: 'background 0.2s' }}>
                             <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', color, boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}>▶</div>
                           </div>
-                          {v.isShort && <span style={{ position: 'absolute', top: 10, left: 10, background: '#EF4444', color: 'white', borderRadius: '0.5rem', padding: '0.2rem 0.55rem', fontSize: '0.7rem', fontWeight: 900 }}>SHORT</span>}
+                          <span style={{ position: 'absolute', top: 10, left: 10, background: 'var(--gold)', color: 'white', borderRadius: '0.5rem', padding: '0.2rem 0.55rem', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.05em' }}>★ FEATURED</span>
+                          {v.viewCount > 0 && <span style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.65)', color: 'white', borderRadius: '0.4rem', padding: '0.15rem 0.45rem', fontSize: '0.68rem', fontWeight: 700 }}>{v.viewCount >= 1000 ? `${(v.viewCount / 1000).toFixed(1)}K` : v.viewCount} views</span>}
                         </>
                       )}
                     </div>
