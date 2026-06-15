@@ -234,7 +234,7 @@ export default function Home() {
               {displayVideos.length > 0 ? displayVideos.map((v, idx) => {
                 const color = EP_COLORS[idx % EP_COLORS.length];
                 const isPlaying = playingId === v.id;
-                const aspectRatio = v.isShort ? '177.78%' : '56.25%';
+                const aspectRatio = '56.25%';
                 return (
                   <div key={v.id} className="card">
                     <div style={{ position: 'relative', background: `${color}22`, paddingTop: aspectRatio, cursor: isPlaying ? 'default' : 'pointer' }}
