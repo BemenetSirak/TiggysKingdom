@@ -7,6 +7,15 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { API } from '../lib/api';
 import { STATUS_COLORS } from '../lib/constants';
 
+function getTrackingUrl(carrier?: string, number?: string): string | null {
+  if (!number) return null;
+  const c = (carrier || '').toLowerCase();
+  if (c.includes('ups'))   return `https://www.ups.com/track?tracknum=${encodeURIComponent(number)}`;
+  if (c.includes('usps'))  return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(number)}`;
+  if (c.includes('fedex')) return `https://www.fedex.com/fedex/track/?tracknumbers=${encodeURIComponent(number)}`;
+  return null;
+}
+
 const STATUS_STEPS = ['placed', 'processing', 'shipped', 'delivered'];
 
 interface OrderItem {
@@ -76,6 +85,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || user.isGuest) { navigate('/login', { state: { from: '/orders' } }); return; }
@@ -87,7 +97,7 @@ export default function Orders() {
   }, [user, navigate]);
 
   const requestCancel = async (orderId: string) => {
-    if (!window.confirm('Submit a cancellation request for this order? Our team will review it shortly.')) return;
+    setConfirmCancelId(null);
     setCancellingId(orderId);
     try {
       const res = await fetch(`${API}/api/orders/${orderId}/cancel-request`, {
@@ -154,19 +164,29 @@ export default function Orders() {
                 </div>
 
                 {/* Tracking */}
-                {order.trackingNumber && (
-                  <div style={{ marginBottom: '1rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '0.75rem', padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '1.25rem' }}>🚚</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontWeight: 800, fontSize: '0.85rem', color: '#166534' }}>
-                        {order.trackingCarrier ? `${order.trackingCarrier} — ` : ''}Tracking #{order.trackingNumber}
-                      </p>
-                      <p style={{ margin: '0.1rem 0 0', fontSize: '0.78rem', color: '#15803D', fontWeight: 600 }}>
-                        Your order is on its way!
-                      </p>
+                {order.trackingNumber && (() => {
+                  const url = getTrackingUrl(order.trackingCarrier, order.trackingNumber);
+                  return (
+                    <div style={{ marginBottom: '1rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '0.75rem', padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.25rem' }}>🚚</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontWeight: 800, fontSize: '0.85rem', color: '#166534' }}>
+                          {order.trackingCarrier ? `${order.trackingCarrier} — ` : ''}
+                          {url ? (
+                            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#166534', textDecoration: 'underline' }}>
+                              Tracking #{order.trackingNumber}
+                            </a>
+                          ) : (
+                            <>Tracking #{order.trackingNumber}</>
+                          )}
+                        </p>
+                        <p style={{ margin: '0.1rem 0 0', fontSize: '0.78rem', color: '#15803D', fontWeight: 600 }}>
+                          Your order is on its way!
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Items */}
                 <div style={{ borderTop: '1px solid var(--cream-border)', paddingTop: '1rem' }}>
@@ -200,13 +220,37 @@ export default function Orders() {
                           <p style={{ margin: 0, fontSize: '0.75rem', color: '#A16207', fontWeight: 600 }}>Our team will review and confirm shortly.</p>
                         </div>
                       </div>
+                    ) : confirmCancelId === order.id ? (
+                      <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '0.625rem', padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: '0.85rem', color: '#7F1D1D' }}>
+                          Submit a cancellation request for this order?
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: '#991B1B', fontWeight: 600 }}>
+                          Our team will review it and confirm shortly.
+                        </p>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={() => requestCancel(order.id)}
+                            disabled={cancellingId === order.id}
+                            style={{ background: '#DC2626', border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.875rem', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', opacity: cancellingId === order.id ? 0.6 : 1 }}
+                          >
+                            {cancellingId === order.id ? 'Submitting…' : 'Yes, Request Cancellation'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmCancelId(null)}
+                            style={{ background: 'var(--cream)', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', padding: '0.4rem 0.75rem', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            Keep Order
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <button
-                        onClick={() => requestCancel(order.id)}
+                        onClick={() => setConfirmCancelId(order.id)}
                         disabled={cancellingId === order.id}
                         style={{ background: 'none', border: '1.5px solid #FCA5A5', borderRadius: '0.5rem', padding: '0.45rem 1rem', color: '#DC2626', fontWeight: 700, fontSize: '0.825rem', cursor: 'pointer', opacity: cancellingId === order.id ? 0.6 : 1 }}
                       >
-                        {cancellingId === order.id ? 'Submitting…' : 'Request Cancellation'}
+                        Request Cancellation
                       </button>
                     )}
                   </div>

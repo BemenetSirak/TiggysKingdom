@@ -336,12 +336,21 @@ app.post("/api/auth/request-reset", async (req: Request, res: Response) => {
   const expiresAt = Date.now() + 15 * 60 * 1000;
   await supabase.from("reset_tokens").insert({ email, code, expires_at: expiresAt });
 
-  sendMail(email, "Your Password Reset Code — Tiggy's Kingdom",
-    `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
-      <h2 style="color:#6B2020">Password Reset Code</h2>
-      <p>Use this code to reset your password. It expires in 15 minutes.</p>
-      <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.3em;text-align:center;color:#6B2020;padding:24px;background:#FAF8F3;border-radius:12px;margin:16px 0">${code}</div>
-      <p style="color:#888;font-size:12px">If you didn't request this, ignore this email.</p>
+  sendMail(email, "Your password reset code — Tiggy's Kingdom",
+    `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;color:#222">
+      <h2 style="color:#6B2020;margin-bottom:4px">Password Reset</h2>
+      <p style="color:#555;line-height:1.6;margin-top:8px">
+        We received a request to reset your Tiggy's Kingdom password.<br/>
+        Use the code below — it expires in <strong>15 minutes</strong>.
+      </p>
+      <div style="font-size:2.75rem;font-weight:900;letter-spacing:0.35em;text-align:center;color:#6B2020;padding:28px 24px;background:#FAF8F3;border-radius:12px;border:2px solid #F0E8D8;margin:24px 0">${code}</div>
+      <p style="color:#555;line-height:1.6">
+        Enter this code on the password reset page to create a new password.
+      </p>
+      <p style="margin-top:28px;color:#999;font-size:12px;line-height:1.6">
+        If you didn't request a password reset, you can safely ignore this email — your account is still secure.<br/>
+        © ${new Date().getFullYear()} Tiggy's Kingdom
+      </p>
     </div>`
   );
   console.log(`🔑 Reset code for ${email}: ${code}`);
@@ -362,6 +371,23 @@ app.post("/api/auth/verify-reset", async (req: Request, res: Response) => {
   if (!token) return res.status(400).json({ error: "Invalid or expired code." });
 
   await supabase.from("reset_tokens").delete().eq("id", token.id);
+
+  // Send confirmation email
+  sendMail(email, "Your Tiggy's Kingdom password has been reset",
+    `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;color:#222">
+      <h2 style="color:#6B2020;margin-bottom:8px">Password Reset Successful ✓</h2>
+      <p style="color:#555;line-height:1.6">Your Tiggy's Kingdom password has been successfully reset. You can now sign in with your new password.</p>
+      <a href="${CLIENT_ORIGIN}/login"
+        style="display:inline-block;margin-top:16px;padding:12px 28px;background:#6B2020;color:white;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">
+        Sign In →
+      </a>
+      <p style="margin-top:24px;color:#999;font-size:12px;line-height:1.6">
+        If you didn't reset your password, please contact us immediately by replying to this email.<br/>
+        © ${new Date().getFullYear()} Tiggy's Kingdom
+      </p>
+    </div>`
+  );
+
   res.json({ success: true });
 });
 
@@ -422,6 +448,7 @@ app.post("/api/admin/login", (req: Request, res: Response) => {
 // ── Admin settings ────────────────────────────────────────────────────────────
 let runtimeAdminPassword = ADMIN_PASSWORD;
 let lowStockThreshold = parseInt(process.env.LOW_STOCK_THRESHOLD || "5");
+let announcementBar = process.env.ANNOUNCEMENT_BAR || "+ NEW STORY EVERY SUNDAY · FREE SHIPPING OVER $40 · MADE FOR ORTHODOX FAMILIES +";
 
 app.put("/api/admin/settings/password", requireAdmin, (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
@@ -440,7 +467,18 @@ app.put("/api/admin/settings/low-stock", requireAdmin, (req: Request, res: Respo
 });
 
 app.get("/api/admin/settings", requireAdmin, (_req: Request, res: Response) => {
-  res.json({ lowStockThreshold });
+  res.json({ lowStockThreshold, announcementBar });
+});
+
+app.get("/api/settings/announcement", (_req: Request, res: Response) => {
+  res.json({ text: announcementBar });
+});
+
+app.put("/api/admin/settings/announcement", requireAdmin, (req: Request, res: Response) => {
+  const { text } = req.body as { text?: string };
+  if (typeof text !== "string") return res.status(400).json({ error: "text is required" });
+  announcementBar = text.trim();
+  res.json({ ok: true, text: announcementBar });
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -506,12 +544,25 @@ app.post("/api/admin/products", requireAdmin, async (req: Request, res: Response
 
 app.put("/api/admin/products/:id", requireAdmin, async (req: Request, res: Response) => {
   const b = req.body;
+  const { data: prev } = await supabase.from("products").select("stock, title").eq("id", Number(req.params.id)).maybeSingle();
   const { data, error } = await supabase.from("products").update({
     title: b.title, author: b.author, price: b.price, original_price: b.originalPrice ?? null,
     category: b.category, ages: b.ages, stock: b.stock, badge: b.badge ?? null, active: b.active,
   }).eq("id", Number(req.params.id)).select().single();
   if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
   await appendLog("product_update", { id: data.id, title: data.title });
+  // Send low-stock alert if stock dropped to or below threshold
+  if (b.stock !== undefined && Number(b.stock) <= lowStockThreshold && prev && Number(prev.stock) > lowStockThreshold) {
+    const adminNotifyEmail = process.env.ADMIN_NOTIFY_EMAIL || ADMIN_EMAIL;
+    sendMail(adminNotifyEmail, `⚠ Low Stock Alert — ${data.title}`,
+      `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:24px">
+        <h2 style="color:#6B2020">Low Stock Alert</h2>
+        <p><strong>${data.title}</strong> is running low.</p>
+        <p>Current stock: <strong style="color:#EF4444">${b.stock}</strong> (threshold: ${lowStockThreshold})</p>
+        <p>Log in to the admin panel to restock this item.</p>
+      </div>`
+    );
+  }
   res.json(camelize(data));
 });
 

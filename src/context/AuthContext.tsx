@@ -77,8 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (email: string, password: string) => {
     const users: (User & { password: string })[] = JSON.parse(localStorage.getItem('tk_users') || '[]');
-    const found = users.find(u => u.email === email && u.password === password);
-    if (!found) return { success: false, error: 'Invalid email or password.' };
+    const byEmail = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+    if (!byEmail) return { success: false, error: 'No account found with that email address.' };
+    if (byEmail.password !== password) return { success: false, error: 'Incorrect password. Please try again.' };
+    const found = byEmail;
     const { password: _, ...safe } = found;
     setUser(safe);
     localStorage.setItem('tk_user', JSON.stringify(safe));
@@ -87,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = (name: string, email: string, password: string) => {
     const users: (User & { password: string })[] = JSON.parse(localStorage.getItem('tk_users') || '[]');
-    if (users.find(u => u.email === email)) {
+    if (users.find(u => u.email.toLowerCase() === email.toLowerCase().trim())) {
       return { success: false, error: 'An account with this email already exists.' };
     }
     const newUser = {

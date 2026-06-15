@@ -16,11 +16,11 @@ const NAV_LINKS = [
 ];
 
 const BREADCRUMB_LABELS: Record<string, string> = {
-  '/episodes': 'Watch', '/lessons': 'Watch', '/shop': 'Shop', '/cart': 'Cart',
+  '/episodes': 'Watch', '/lessons': 'Watch', '/shop': 'Bookshop', '/cart': 'Cart',
   '/orders': 'My Orders', '/success': 'Order Confirmed', '/dashboard': 'Dashboard',
   '/activities': 'Activities', '/subscribe': 'Parents', '/about': 'Our Mission',
   '/stories': 'Stories', '/calendar': 'Prayer Corner', '/terms': 'Terms of Service',
-  '/privacy': 'Privacy Policy',
+  '/privacy': 'Privacy Policy', '/login': 'Sign In', '/forgot-password': 'Reset Password', '/search': 'Search',
 };
 
 const FOOTER_COLS = [
@@ -62,6 +62,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [badgeAnim, setBadgeAnim]     = useState(false);
   const [mobileEmail, setMobileEmail] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [announcement, setAnnouncement] = useState('+ NEW STORY EVERY SUNDAY · FREE SHIPPING OVER $40 · MADE FOR ORTHODOX FAMILIES +');
 
   const { user, logout }       = useAuth();
   const { cartCount }          = useCart();
@@ -71,6 +72,13 @@ export default function Layout({ children }: { children: ReactNode }) {
   const menuRef                = useRef<HTMLDivElement>(null);
   const searchInputRef         = useRef<HTMLInputElement>(null);
   const prevCartCount          = useRef(cartCount);
+
+  useEffect(() => {
+    fetch(`${NEWSLETTER_API}/api/settings/announcement`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.text) setAnnouncement(d.text); })
+      .catch(() => {});
+  }, []);
 
   const isActive = (to: string) => to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
 
@@ -105,7 +113,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     setSearchOpen(false);
     setSearchQuery('');
   };
@@ -143,11 +151,13 @@ export default function Layout({ children }: { children: ReactNode }) {
       <a href="#main-content" style={{ position: 'absolute', top: -60, left: 0, background: 'var(--maroon)', color: 'white', padding: '0.5rem 1rem', fontWeight: 700, borderRadius: '0 0 0.5rem 0', zIndex: 9999, transition: 'top 0.2s' }} onFocus={e => e.currentTarget.style.top = '0'} onBlur={e => e.currentTarget.style.top = '-60px'}>Skip to content</a>
 
       {/* ===== ANNOUNCEMENT BAR ===== */}
-      <div style={{ background: '#1B2A4A', padding: '0.45rem 1.25rem', textAlign: 'center' }}>
-        <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.04em' }}>
-          + NEW STORY EVERY SUNDAY &nbsp;·&nbsp; <span style={{ color: '#F5C842' }}>FREE SHIPPING</span> OVER $40 &nbsp;·&nbsp; MADE FOR ORTHODOX FAMILIES +
-        </p>
-      </div>
+      {announcement && (
+        <div style={{ background: '#1B2A4A', padding: '0.45rem 1.25rem', textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.04em' }}>
+            {announcement}
+          </p>
+        </div>
+      )}
 
       {/* ===== NAVBAR ===== */}
       <nav style={{ background: 'white', borderBottom: '1px solid var(--cream-border)', position: 'sticky', top: 0, zIndex: 40 }}>
@@ -365,15 +375,28 @@ export default function Layout({ children }: { children: ReactNode }) {
       )}
 
       {/* ===== BREADCRUMB ===== */}
-      {BREADCRUMB_LABELS[location.pathname] && (
-        <div style={{ background: 'var(--cream-dark)', borderBottom: '1px solid var(--cream-border)', padding: '0.4rem 1.25rem' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-            <Link to="/" style={{ color: 'var(--gold-dark)', fontWeight: 700 }}>Home</Link>
-            <span>›</span>
-            <span style={{ color: 'var(--maroon)', fontWeight: 700 }}>{BREADCRUMB_LABELS[location.pathname]}</span>
+      {(() => {
+        const exact = BREADCRUMB_LABELS[location.pathname];
+        const segments = location.pathname.split('/').filter(Boolean);
+        const parentPath = segments.length > 1 ? '/' + segments[0] : null;
+        const parentLabel = parentPath ? BREADCRUMB_LABELS[parentPath] : null;
+        if (!exact && !parentLabel) return null;
+        return (
+          <div style={{ background: 'var(--cream-dark)', borderBottom: '1px solid var(--cream-border)', padding: '0.4rem 1.25rem' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              <Link to="/" style={{ color: 'var(--gold-dark)', fontWeight: 700 }}>Home</Link>
+              {parentLabel && !exact && (
+                <>
+                  <span>›</span>
+                  <Link to={parentPath!} style={{ color: 'var(--gold-dark)', fontWeight: 700 }}>{parentLabel}</Link>
+                </>
+              )}
+              <span>›</span>
+              <span style={{ color: 'var(--maroon)', fontWeight: 700 }}>{exact || 'Details'}</span>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ===== MAIN CONTENT ===== */}
       <main id="main-content" style={{ flex: 1 }}>

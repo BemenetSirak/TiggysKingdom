@@ -26,6 +26,7 @@ import ShopProduct from './pages/ShopProduct';
 import Calendar from './pages/Calendar';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import Search from './pages/Search';
 
 function App() {
   return (
@@ -59,6 +60,7 @@ function App() {
                     <Route path="/about" element={<About />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/search" element={<Search />} />
                     <Route path="/stories" element={<Stories />} />
                     <Route path="/calendar" element={<Calendar />} />
                     <Route path="/terms" element={<Terms />} />

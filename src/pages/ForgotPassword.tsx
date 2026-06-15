@@ -56,13 +56,13 @@ export default function ForgotPassword() {
 
       // Update password in localStorage
       const users = JSON.parse(localStorage.getItem('tk_users') || '[]');
-      const idx = users.findIndex(u => u.email === email);
+      const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase().trim());
       if (idx !== -1) {
         users[idx].password = newPassword;
         localStorage.setItem('tk_users', JSON.stringify(users));
         // If currently logged in as this user, clear the session
         const current = JSON.parse(localStorage.getItem('tk_user') || 'null');
-        if (current?.email === email) localStorage.removeItem('tk_user');
+        if (current?.email?.toLowerCase() === email.toLowerCase().trim()) localStorage.removeItem('tk_user');
       }
       setStep('done');
     } catch {

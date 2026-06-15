@@ -690,6 +690,14 @@ function SubscribersTab({ toast }: { toast: ToastFn }) {
         <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Subscribers</h2>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={() => setShowBlast(true)} className="btn-gold" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>✉ Email Blast</button>
+          <button onClick={() => {
+            const rows = [['Email', 'Name', 'Source', 'Joined', 'Active'], ...allSubs.map(s => [s.email, s.name || '', s.source || '', s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '', s.active ? 'Yes' : 'No'])];
+            const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+          }} style={{ padding: '0.3rem 0.875rem', borderRadius: '0.4rem', border: '1.5px solid var(--cream-border)', background: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: '#22C55E' }}>
+            ⬇ Export CSV
+          </button>
           {removedCount > 0 && (
             <button onClick={() => setShowRemoved(v => !v)} style={{ background: 'none', border: '1.5px solid var(--cream-border)', borderRadius: '0.4rem', padding: '0.3rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
               {showRemoved ? 'Hide removed' : `Show removed (${removedCount})`}
@@ -796,6 +804,17 @@ function UsersTab() {
         <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Registered Users</h2>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <span style={{ background: 'var(--cream-dark)', color: 'var(--text-secondary)', padding: '0.3rem 0.875rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.85rem' }}>{users.length} total</span>
+          <button onClick={() => {
+            const rows = [['Name', 'Email', 'User ID', 'Joined', 'Orders'], ...users.map(u => {
+              const info = ordersByUser[u.id];
+              return [u.name, u.email, u.id, u.joinedDate ? new Date(u.joinedDate).toLocaleDateString() : '', info ? info.count : 0];
+            })];
+            const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            a.download = `users-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+          }} style={{ padding: '0.3rem 0.875rem', borderRadius: '0.4rem', border: '1.5px solid var(--cream-border)', background: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: '#22C55E' }}>
+            ⬇ Export CSV
+          </button>
           <button onClick={load} style={{ ...btnBase }}>↻ Refresh</button>
         </div>
       </div>
@@ -1199,6 +1218,7 @@ function ActivitiesTab() {
           { key: 'desc',     label: 'Description', type: 'textarea' },
           { key: 'cta',      label: 'CTA text' },
           { key: 'ctaColor', label: 'CTA color', type: 'color' },
+          { key: 'fileUrl',  label: 'Download URL (PDF link)' },
           { key: 'active',   label: 'Active', type: 'toggle' },
         ]}
       />
@@ -1207,22 +1227,134 @@ function ActivitiesTab() {
 }
 
 function QuizzesTab() {
+  const [quizzes, setQuizzes] = useLocalStore<QuizQuestion>('tk_quizzes', QUIZ_DEFAULTS);
+  const [editing, setEditing] = useState<QuizQuestion | null>(null);
+  const [form, setForm] = useState<{ question: string; options: string[]; correctIndex: number; active: boolean }>({
+    question: '', options: ['', '', ''], correctIndex: 0, active: true,
+  });
+
+  const rowStyle: CSSProperties = { padding: '0.875rem 1rem', borderBottom: '1px solid var(--cream)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' };
+  const inputSt: CSSProperties = { width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+
+  const startNew = () => {
+    setEditing({ id: Date.now().toString(), question: '', options: ['', '', ''], correctIndex: 0, active: true });
+    setForm({ question: '', options: ['', '', ''], correctIndex: 0, active: true });
+  };
+
+  const startEdit = (q: QuizQuestion) => {
+    setEditing(q);
+    setForm({ question: q.question, options: [...q.options, '', '', ''].slice(0, Math.max(q.options.length, 3)), correctIndex: q.correctIndex, active: q.active });
+  };
+
+  const save = () => {
+    if (!form.question.trim()) return;
+    const options = form.options.map(o => o.trim()).filter(Boolean);
+    if (options.length < 2) return;
+    const correctIndex = Math.min(form.correctIndex, options.length - 1);
+    const updated: QuizQuestion = { id: editing!.id, question: form.question.trim(), options, correctIndex, active: form.active };
+    const exists = quizzes.find(q => q.id === editing!.id);
+    setQuizzes(exists ? quizzes.map(q => q.id === editing!.id ? updated : q) : [...quizzes, updated]);
+    setEditing(null);
+  };
+
+  const addOption = () => setForm(f => ({ ...f, options: [...f.options, ''] }));
+  const removeOption = (i: number) => setForm(f => {
+    const options = f.options.filter((_, idx) => idx !== i);
+    return { ...f, options, correctIndex: Math.min(f.correctIndex, options.length - 1) };
+  });
+
   return (
     <div>
-      <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Quiz Questions</h2>
-      <ContentManager<QuizQuestion>
-        storageKey="tk_quizzes"
-        defaults={QUIZ_DEFAULTS}
-        addLabel="Add Question"
-        renderPreview={q => q.question.slice(0, 80)}
-        fields={[
-          { key: 'question',     label: 'Question', type: 'textarea' },
-          { key: 'active',       label: 'Active', type: 'toggle' },
-        ]}
-      />
-      <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-        Note: To edit answer options and correct answer, use the Edit form. Options are comma-separated in the &quot;options&quot; field when editing raw JSON is needed — this editor keeps it simple.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Quiz Questions</h2>
+        <button onClick={startNew} style={{ ...btnBase, background: 'var(--maroon)', color: 'white', border: 'none', padding: '0.4rem 1rem' }}>+ Add Question</button>
+      </div>
+
+      {editing && (
+        <div style={{ background: 'var(--gold-pale)', border: '1.5px solid var(--gold)', borderRadius: '0.875rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <h4 style={{ margin: '0 0 1.25rem', color: 'var(--maroon)' }}>{quizzes.find(q => q.id === editing.id) ? 'Edit' : 'New'} Question</h4>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Question</label>
+            <textarea
+              value={form.question}
+              onChange={e => setForm(f => ({ ...f, question: e.target.value }))}
+              rows={2}
+              style={{ ...inputSt, resize: 'vertical' }}
+              placeholder="e.g. Which saint is famous for giving gifts? 🎁"
+            />
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+              Answer Options — select the correct one
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {form.options.map((opt, i) => (
+                <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="radio"
+                    name="correct"
+                    checked={form.correctIndex === i}
+                    onChange={() => setForm(f => ({ ...f, correctIndex: i }))}
+                    title="Mark as correct answer"
+                    style={{ width: 18, height: 18, accentColor: '#2E8B57', flexShrink: 0 }}
+                  />
+                  <input
+                    type="text"
+                    value={opt}
+                    onChange={e => setForm(f => { const o = [...f.options]; o[i] = e.target.value; return { ...f, options: o }; })}
+                    placeholder={`Option ${i + 1}`}
+                    style={{ ...inputSt }}
+                  />
+                  {form.options.length > 2 && (
+                    <button onClick={() => removeOption(i)} style={{ background: '#FEE2E2', border: 'none', borderRadius: '0.3rem', padding: '0.3rem 0.5rem', color: '#DC2626', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {form.options.length < 5 && (
+              <button onClick={addOption} style={{ marginTop: '0.5rem', ...btnBase }}>+ Add option</button>
+            )}
+            <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: '#2E8B57', fontWeight: 700 }}>
+              ● = correct answer
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <input type="checkbox" checked={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} style={{ width: 18, height: 18 }} />
+            <label style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Active (show to users)</label>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={save} style={{ ...btnBase, background: 'var(--maroon)', color: 'white', border: 'none' }}>Save Question</button>
+            <button onClick={() => setEditing(null)} style={{ ...btnBase }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
+        {quizzes.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>No questions yet.</p>}
+        {quizzes.map(q => (
+          <div key={q.id} style={{ ...rowStyle, opacity: q.active ? 1 : 0.5 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.question}</p>
+              <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: '#2E8B57', fontWeight: 600 }}>
+                ✓ {q.options[q.correctIndex]} ({q.options.length} options)
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+              <button onClick={() => setQuizzes(quizzes.map(i => i.id === q.id ? { ...i, active: !i.active } : i))}
+                style={{ ...btnBase, background: q.active ? '#FEF3C7' : '#DCFCE7', color: q.active ? '#C9922A' : '#166534' }}>
+                {q.active ? 'Hide' : 'Show'}
+              </button>
+              <button onClick={() => startEdit(q)} style={{ ...btnBase }}>Edit</button>
+              <ConfirmBtn label="Delete" onConfirm={() => setQuizzes(quizzes.filter(i => i.id !== q.id))}
+                btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }} />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1274,6 +1406,16 @@ function GuidesTab() {
   };
 
   const handleUpload = async (guideId: string, file: File) => {
+    const ALLOWED_EXTS = ['.pdf', '.doc', '.docx'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      setUploadError(`Only PDF and Word documents are allowed (.pdf, .doc, .docx). Got: ${ext}`);
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('File must be under 20 MB.');
+      return;
+    }
     setUploading(guideId);
     setUploadError(null);
     try {
@@ -1348,7 +1490,7 @@ function GuidesTab() {
                   type="file"
                   ref={el => { fileRefs.current[guide.id] = el; }}
                   style={{ display: 'none' }}
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                  accept=".pdf,.doc,.docx"
                   onChange={e => { if (e.target.files?.[0]) handleUpload(guide.id, e.target.files[0]); e.target.value = ''; }}
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1419,11 +1561,12 @@ function StripeSubsTab() {
   const [subs, setSubs] = useState<StripeSub[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const load = () => {
     setLoading(true);
     apiFetch('/api/admin/stripe-subscriptions')
-      .then(d => { setSubs(Array.isArray(d) ? d : []); setLoading(false); })
+      .then(d => { setSubs(Array.isArray(d) ? d : []); setLastRefreshed(new Date()); setLoading(false); })
       .catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -1444,6 +1587,11 @@ function StripeSubsTab() {
           <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.3rem 0.875rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.85rem' }}>
             MRR ~${mrr.toFixed(2)}/mo
           </span>
+          {lastRefreshed && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              Updated {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
           <button onClick={load} style={{ ...btnBase }}>↻ Refresh</button>
         </div>
       </div>
@@ -1510,8 +1658,14 @@ function SettingsTab({ toast }: { toast: ToastFn }) {
   const [lowStockVal, setLowStockVal]     = useState('5');
   const [savingStock, setSavingStock]     = useState(false);
 
+  const [announcementText, setAnnouncementText] = useState('');
+  const [savingAnnouncement, setSavingAnnouncement] = useState(false);
+
   useEffect(() => {
-    apiFetch('/api/admin/settings').then(d => { if (d.lowStockThreshold) setLowStockVal(String(d.lowStockThreshold)); }).catch(() => {});
+    apiFetch('/api/admin/settings').then(d => {
+      if (d.lowStockThreshold) setLowStockVal(String(d.lowStockThreshold));
+      if (d.announcementBar !== undefined) setAnnouncementText(d.announcementBar);
+    }).catch(() => {});
   }, []);
 
   const handlePwChange = async (e: FormEvent) => {
@@ -1537,6 +1691,16 @@ function SettingsTab({ toast }: { toast: ToastFn }) {
       toast(`Low-stock threshold set to ${val}`, 'success');
     } catch { toast('Failed to save setting.', 'error'); }
     setSavingStock(false);
+  };
+
+  const handleSaveAnnouncement = async (e: FormEvent) => {
+    e.preventDefault();
+    setSavingAnnouncement(true);
+    try {
+      await apiFetch('/api/admin/settings/announcement', { method: 'PUT', body: JSON.stringify({ text: announcementText }) });
+      toast('Announcement bar updated!', 'success');
+    } catch { toast('Failed to save announcement.', 'error'); }
+    setSavingAnnouncement(false);
   };
 
   const inputStyle: CSSProperties = { padding: '0.55rem 0.75rem', border: '1.5px solid var(--cream-border)', borderRadius: '0.5rem', fontFamily: 'Fredoka, sans-serif', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' as const };
@@ -1573,6 +1737,26 @@ function SettingsTab({ toast }: { toast: ToastFn }) {
           />
           <button type="submit" disabled={savingStock} className="btn-gold" style={{ padding: '0.55rem 1.25rem', fontSize: '0.9rem', opacity: savingStock ? 0.7 : 1 }}>
             {savingStock ? 'Saving…' : 'Save'}
+          </button>
+        </form>
+      </div>
+
+      {/* Announcement bar */}
+      <div className="card" style={{ padding: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Announcement Bar</h3>
+        <p style={{ margin: '0 0 0.875rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.875rem' }}>
+          The text shown in the dark bar at the top of every page. Leave empty to hide the bar.
+        </p>
+        <form onSubmit={handleSaveAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+          <textarea
+            value={announcementText}
+            onChange={e => setAnnouncementText(e.target.value)}
+            rows={2}
+            placeholder="e.g. + NEW STORY EVERY SUNDAY · FREE SHIPPING OVER $40 +"
+            style={{ ...inputStyle, resize: 'vertical' }}
+          />
+          <button type="submit" disabled={savingAnnouncement} className="btn-gold" style={{ padding: '0.55rem 1.25rem', fontSize: '0.9rem', opacity: savingAnnouncement ? 0.7 : 1, alignSelf: 'flex-start' }}>
+            {savingAnnouncement ? 'Saving…' : 'Update Announcement'}
           </button>
         </form>
       </div>

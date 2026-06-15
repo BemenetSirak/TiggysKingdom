@@ -18,6 +18,7 @@ export interface ActivityCard {
   cta: string;
   ctaColor: string;
   active: boolean;
+  fileUrl?: string;    // optional download URL
 }
 
 export interface QuizQuestion {
@@ -197,14 +198,28 @@ export default function Activities() {
                     <span key={tag} style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', borderRadius: '9999px', padding: '0.15rem 0.6rem', fontSize: '0.72rem', fontWeight: 700 }}>{tag}</span>
                   ))}
                 </div>
-                <button
-                  style={{ background: 'none', border: 'none', padding: 0, color: a.ctaColor, fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Fredoka, sans-serif' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'}
-                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'}
-                  onClick={() => addToast(`"${a.title}" — coming soon!`, 'info')}
-                >
-                  {a.cta}
-                </button>
+                {a.fileUrl ? (
+                  <a
+                    href={a.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    style={{ color: a.ctaColor, fontWeight: 800, fontSize: '0.9rem', fontFamily: 'Fredoka, sans-serif', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'}
+                    onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'}
+                  >
+                    {a.cta}
+                  </a>
+                ) : (
+                  <button
+                    style={{ background: 'none', border: 'none', padding: 0, color: a.ctaColor, fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Fredoka, sans-serif' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'}
+                    onClick={() => addToast(`"${a.title}" — coming soon!`, 'info')}
+                  >
+                    {a.cta}
+                  </button>
+                )}
               </div>
             ))}
           </div>
