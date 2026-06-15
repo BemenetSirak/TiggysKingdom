@@ -59,21 +59,38 @@ export default function Search() {
 
     const term = q.trim().toLowerCase();
 
+    // Pull YouTube videos from the local cache set by the Lessons page
+    const ytCached: { id: string; title: string; description?: string }[] = (() => {
+      try {
+        const s = localStorage.getItem('tk_yt_lessons_v6');
+        if (!s) return [];
+        const { data } = JSON.parse(s);
+        return Array.isArray(data) ? data : [];
+      } catch { return []; }
+    })();
+
     Promise.all([
       fetch(`${API}/api/products`).then(r => r.json()).catch(() => []),
       fetch(`${API}/api/episodes`).then(r => r.json()).catch(() => []),
-    ]).then(([allProducts, allEpisodes]) => {
+    ]).then(([allProducts, allSupabaseEpisodes]) => {
       const products = (Array.isArray(allProducts) ? allProducts : []).filter((p: Product) =>
         p.title?.toLowerCase().includes(term) ||
         p.author?.toLowerCase().includes(term) ||
         p.category?.toLowerCase().includes(term)
       );
 
-      const episodes = (Array.isArray(allEpisodes) ? allEpisodes : []).filter((e: Episode) =>
+      // Merge Supabase episodes + YouTube cache, deduplicate by videoId/id
+      const supabaseEps: Episode[] = (Array.isArray(allSupabaseEpisodes) ? allSupabaseEpisodes : []).filter((e: Episode) =>
         e.title?.toLowerCase().includes(term) ||
         e.description?.toLowerCase().includes(term) ||
         e.category?.toLowerCase().includes(term)
       );
+      const ytEps: Episode[] = ytCached
+        .filter(v => v.title?.toLowerCase().includes(term) || v.description?.toLowerCase().includes(term))
+        .map(v => ({ id: v.id, videoId: v.id, title: v.title, description: v.description }));
+
+      const seenIds = new Set(supabaseEps.map(e => e.videoId || e.id));
+      const episodes = [...supabaseEps, ...ytEps.filter(e => !seenIds.has(e.videoId))];
 
       const rawActivities: Activity[] = (() => {
         try { return JSON.parse(localStorage.getItem('tk_activities') || '[]'); } catch { return []; }
@@ -199,11 +216,16 @@ export default function Search() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {results.episodes.map(ep => (
                 <Link key={ep.id} to="/episodes" state={{ resumeVideoId: ep.videoId }} style={{ textDecoration: 'none' }}>
-                  <div className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'white' }}
+                  <div className="card" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'white' }}
                     onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--cream-dark)'}
                     onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'white'}
                   >
-                    <div style={{ width: 52, height: 52, borderRadius: '0.625rem', background: 'linear-gradient(135deg, #1A4FA0, #3B82F6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>▶</div>
+                    <div style={{ width: 88, height: 52, borderRadius: '0.5rem', overflow: 'hidden', flexShrink: 0, background: '#1A4FA0', position: 'relative' }}>
+                      <img src={`https://i.ytimg.com/vi/${ep.videoId}/mqdefault.jpg`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={e => { e.currentTarget.style.display = 'none'; }} />
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                        <span style={{ color: 'white', fontSize: '1.1rem' }}>▶</span>
+                      </div>
+                    </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.925rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.title}</p>
                       {ep.description && <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.description}</p>}
