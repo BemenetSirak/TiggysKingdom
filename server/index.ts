@@ -325,9 +325,7 @@ app.put("/api/users/:id/name", async (req: Request, res: Response) => {
 app.post("/api/auth/request-reset", async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email required" });
-
-  const { data: user } = await supabase.from("users").select("email").eq("email", email).maybeSingle();
-  if (!user) return res.status(404).json({ error: "No account found with this email." });
+  if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) return res.status(400).json({ error: "Invalid email address." });
 
   // Clean up expired tokens for this email
   await supabase.from("reset_tokens").delete().eq("email", email).lt("expires_at", Date.now());
