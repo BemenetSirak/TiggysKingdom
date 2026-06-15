@@ -210,7 +210,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   type="search"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search books…"
+                  placeholder="Search episodes, books…"
                   className="tk-input search-expand"
                   style={{ width: 180, padding: '0.35rem 0.75rem', fontSize: '0.875rem' }}
                   onBlur={() => { if (!searchQuery.trim()) setSearchOpen(false); }}
