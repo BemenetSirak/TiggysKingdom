@@ -213,8 +213,8 @@ app.post("/create-checkout-session", async (req: Request, res: Response) => {
         quantity: item.quantity || 1,
       })),
       ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
-      success_url: `${CLIENT_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${CLIENT_ORIGIN}/cart`,
+      success_url: `${CLIENT_ORIGIN.startsWith('http://localhost') ? (req.headers.origin || CLIENT_ORIGIN) : CLIENT_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${CLIENT_ORIGIN.startsWith('http://localhost') ? (req.headers.origin || CLIENT_ORIGIN) : CLIENT_ORIGIN}/cart`,
     });
     res.json({ url: session.url });
 
@@ -271,8 +271,8 @@ app.post("/create-subscription-session", async (req: Request, res: Response) => 
       }],
       subscription_data: { trial_period_days: 7 },
       customer_email: customerEmail || undefined,
-      success_url: `${CLIENT_ORIGIN}/success?plan=${planId}`,
-      cancel_url:  `${CLIENT_ORIGIN}/subscribe`,
+      success_url: `${CLIENT_ORIGIN.startsWith('http://localhost') ? (req.headers.origin || CLIENT_ORIGIN) : CLIENT_ORIGIN}/success?plan=${planId}`,
+      cancel_url:  `${CLIENT_ORIGIN.startsWith('http://localhost') ? (req.headers.origin || CLIENT_ORIGIN) : CLIENT_ORIGIN}/subscribe`,
     });
     res.json({ url: session.url });
   } catch (err: unknown) {
