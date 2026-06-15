@@ -295,12 +295,9 @@ export default function Shop() {
   return (
     <div>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, var(--gold-pale), #FDE68A)', padding: '3rem 1.25rem', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-          <img src="/tiggy.png" alt="Tiggy" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--maroon)', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--maroon)', lineHeight: 1.1, textAlign: 'left' }}>
-            Tiggy's<br /><span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--gold)', letterSpacing: '0.08em' }}>KINGDOM</span>
-          </span>
+      <div style={{ background: 'linear-gradient(135deg, var(--gold-pale), #FDE68A)', padding: '4rem 1.25rem 3rem', textAlign: 'center' }}>
+        <div style={{ width: 160, height: 160, margin: '0 auto 1.25rem', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 8px 24px rgba(201,146,42,0.2)' }}>
+          <video src="/tiggy%20stories.mp4" autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
         <h1 style={{ color: 'var(--maroon)', margin: '0 0 0.5rem', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
           Treasured Tales for Your Family
