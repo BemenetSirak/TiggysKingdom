@@ -537,6 +537,7 @@ app.post("/api/admin/products", requireAdmin, async (req: Request, res: Response
   const { data, error } = await supabase.from("products").insert({
     title: b.title, author: b.author, price: b.price, original_price: b.originalPrice ?? null,
     category: b.category, ages: b.ages, stock: b.stock ?? 0, badge: b.badge ?? null, active: b.active ?? true,
+    cover_image_url: b.coverImageUrl ?? null, file_url: b.fileUrl ?? null, file_name: b.fileName ?? null,
   }).select().single();
   if (error) return res.status(500).json({ error: error.message });
   await appendLog("product_create", { id: data.id, title: data.title });
@@ -546,10 +547,20 @@ app.post("/api/admin/products", requireAdmin, async (req: Request, res: Response
 app.put("/api/admin/products/:id", requireAdmin, async (req: Request, res: Response) => {
   const b = req.body;
   const { data: prev } = await supabase.from("products").select("stock, title").eq("id", Number(req.params.id)).maybeSingle();
-  const { data, error } = await supabase.from("products").update({
-    title: b.title, author: b.author, price: b.price, original_price: b.originalPrice ?? null,
-    category: b.category, ages: b.ages, stock: b.stock, badge: b.badge ?? null, active: b.active,
-  }).eq("id", Number(req.params.id)).select().single();
+  const updates: Record<string, unknown> = {};
+  if (b.title !== undefined) updates.title = b.title;
+  if (b.author !== undefined) updates.author = b.author;
+  if (b.price !== undefined) updates.price = b.price;
+  if (b.originalPrice !== undefined) updates.original_price = b.originalPrice;
+  if (b.category !== undefined) updates.category = b.category;
+  if (b.ages !== undefined) updates.ages = b.ages;
+  if (b.stock !== undefined) updates.stock = b.stock;
+  if (b.badge !== undefined) updates.badge = b.badge;
+  if (b.active !== undefined) updates.active = b.active;
+  if (b.coverImageUrl !== undefined) updates.cover_image_url = b.coverImageUrl;
+  if (b.fileUrl !== undefined) updates.file_url = b.fileUrl;
+  if (b.fileName !== undefined) updates.file_name = b.fileName;
+  const { data, error } = await supabase.from("products").update(updates).eq("id", Number(req.params.id)).select().single();
   if (error) return res.status(error.code === "PGRST116" ? 404 : 500).json({ error: error.message });
   await appendLog("product_update", { id: data.id, title: data.title });
   // Send low-stock alert if stock dropped to or below threshold
@@ -720,35 +731,45 @@ app.delete("/api/admin/episodes/:id", requireAdmin, async (req: Request, res: Re
   res.json({ success: true });
 });
 
-// ── Guide file uploads ────────────────────────────────────────────────────────
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
-const GUIDES_BUCKET = "guide-files";
+// ── Generic content file uploads (Supabase Storage) ────────────────────────────
+// Registers POST /api/admin/:routeName/upload and DELETE /api/admin/:routeName/file
+// against a dedicated bucket, so Guides/Activities/Stories all share one pattern.
+function registerUploadRoutes(routeName: string, bucket: string, allowedExts: string[], maxSizeMB = 20) {
+  const uploadMw = multer({ storage: multer.memoryStorage(), limits: { fileSize: maxSizeMB * 1024 * 1024 } });
 
-const ensureGuidesBucket = async () => {
-  const { error } = await supabase.storage.createBucket(GUIDES_BUCKET, { public: true });
-  if (error && !error.message.includes("already exists")) console.warn("Bucket create:", error.message);
-};
-ensureGuidesBucket();
+  const ensureBucket = async () => {
+    const { error } = await supabase.storage.createBucket(bucket, { public: true });
+    if (error && !error.message.includes("already exists")) console.warn(`Bucket create (${bucket}):`, error.message);
+  };
+  ensureBucket();
 
-app.post("/api/admin/guides/upload", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
-  if (!req.file) return res.status(400).json({ error: "No file provided" });
-  const ext = (req.file.originalname.split(".").pop() || "bin").toLowerCase();
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const { error } = await supabase.storage
-    .from(GUIDES_BUCKET)
-    .upload(filename, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
-  if (error) return res.status(500).json({ error: error.message });
-  const { data: { publicUrl } } = supabase.storage.from(GUIDES_BUCKET).getPublicUrl(filename);
-  res.json({ url: publicUrl, name: req.file.originalname, filename });
-});
+  app.post(`/api/admin/${routeName}/upload`, requireAdmin, uploadMw.single("file"), async (req: Request, res: Response) => {
+    if (!req.file) return res.status(400).json({ error: "No file provided" });
+    const ext = (req.file.originalname.split(".").pop() || "bin").toLowerCase();
+    if (!allowedExts.includes(`.${ext}`)) return res.status(400).json({ error: `File type not allowed (.${ext})` });
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage
+      .from(bucket)
+      .upload(filename, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
+    if (error) return res.status(500).json({ error: error.message });
+    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filename);
+    res.json({ url: publicUrl, name: req.file.originalname, filename });
+  });
 
-app.delete("/api/admin/guides/file", requireAdmin, async (req: Request, res: Response) => {
-  const { filename } = req.body as { filename?: string };
-  if (!filename) return res.status(400).json({ error: "filename required" });
-  const { error } = await supabase.storage.from(GUIDES_BUCKET).remove([filename]);
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ ok: true });
-});
+  app.delete(`/api/admin/${routeName}/file`, requireAdmin, async (req: Request, res: Response) => {
+    const { filename } = req.body as { filename?: string };
+    if (!filename) return res.status(400).json({ error: "filename required" });
+    const { error } = await supabase.storage.from(bucket).remove([filename]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+}
+
+registerUploadRoutes("guides", "guide-files", [".pdf", ".doc", ".docx"]);
+registerUploadRoutes("activities", "activity-files", [".pdf", ".doc", ".docx", ".png", ".jpg", ".jpeg"]);
+registerUploadRoutes("stories", "story-files", [".pdf", ".epub", ".png", ".jpg", ".jpeg"]);
+registerUploadRoutes("free-stories", "free-story-files", [".pdf", ".png", ".jpg", ".jpeg"]);
+registerUploadRoutes("prayers", "prayer-files", [".pdf", ".png", ".jpg", ".jpeg"]);
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get("/health", (_req: Request, res: Response) => res.json({ status: "ok", time: new Date().toISOString() }));

@@ -8,6 +8,7 @@ import GuestBanner from '../components/GuestBanner';
 // ── Admin-editable data keys ──────────────────────────────────────────────────
 const ACTIVITIES_KEY = 'tk_activities';
 const QUIZZES_KEY    = 'tk_quizzes';
+const ACTIVITY_FILES_KEY = 'tk_activity_files';
 
 export interface ActivityCard {
   id: string;
@@ -18,7 +19,12 @@ export interface ActivityCard {
   cta: string;
   ctaColor: string;
   active: boolean;
-  fileUrl?: string;    // optional download URL
+}
+
+type ActivityFilesMap = Record<string, { url: string; name: string; filename: string }>;
+
+function getActivityFiles(): ActivityFilesMap {
+  try { return JSON.parse(localStorage.getItem(ACTIVITY_FILES_KEY) || '{}'); } catch { return {}; }
 }
 
 export interface QuizQuestion {
@@ -144,6 +150,7 @@ function QuizSection() {
 export default function Activities() {
   usePageMeta('Activities for Kids', 'Coloring pages, quizzes, crafts and printable activities for children — all rooted in Orthodox Christian faith.');
   const activities = getActivities().filter(a => a.active);
+  const activityFiles = getActivityFiles();
   const [email, setEmail] = useState('');
   const { addToast } = useToast();
   const { user } = useAuth();
@@ -186,7 +193,9 @@ export default function Activities() {
             <GuestBanner message="Create a free account to download activity packs, track completed crafts, and save your favorites." />
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-            {activities.map(a => (
+            {activities.map(a => {
+              const file = activityFiles[a.id];
+              return (
               <div key={a.id} className="card" style={{ padding: '1.75rem', background: 'white' }}>
                 <div style={{ width: 48, height: 48, borderRadius: '0.875rem', background: `${a.ctaColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginBottom: '1rem' }}>
                   {a.icon}
@@ -198,9 +207,9 @@ export default function Activities() {
                     <span key={tag} style={{ background: 'var(--cream-dark)', color: 'var(--text-muted)', borderRadius: '9999px', padding: '0.15rem 0.6rem', fontSize: '0.72rem', fontWeight: 700 }}>{tag}</span>
                   ))}
                 </div>
-                {a.fileUrl ? (
+                {file ? (
                   <a
-                    href={a.fileUrl}
+                    href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     download
@@ -221,7 +230,8 @@ export default function Activities() {
                   </button>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

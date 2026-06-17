@@ -24,6 +24,9 @@ interface Product {
   stock?: number;
   active?: boolean;
   quantity?: number;
+  coverImageUrl?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
 }
 
 const BADGE_COLORS: Record<string, string> = {
@@ -76,6 +79,22 @@ function BookCover({ product }: { product: Product }) {
   const c = product.id % COVER_COLORS.length;
   const icon = CATEGORY_ICONS[product.category] || '✦';
   const authorShort = (product.author || '').replace(/^By\s+/i, '');
+
+  if (product.coverImageUrl) {
+    return (
+      <div style={{
+        width: 108, height: 152,
+        backgroundImage: `url(${product.coverImageUrl})`,
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        borderRadius: '3px 6px 6px 3px',
+        boxShadow: '4px 6px 16px rgba(0,0,0,0.35), inset -2px 0 4px rgba(0,0,0,0.2)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 6, background: 'rgba(0,0,0,0.25)', borderRadius: '3px 0 0 3px' }} />
+      </div>
+    );
+  }
+
   return (
     <div style={{
       width: 108, height: 152,

@@ -6,6 +6,7 @@ import { STATUS_COLORS } from '../lib/constants';
 import { type ActivityCard, type QuizQuestion } from './Activities';
 import { type ParentGuide } from './Subscribe';
 import { type Prayer } from './Calendar';
+import { type FreeStory } from './Stories';
 
 interface AdminProduct {
   id: number;
@@ -21,6 +22,9 @@ interface AdminProduct {
   sold?: number;
   rating?: number;
   reviews?: number;
+  coverImageUrl?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
 }
 
 interface AdminOrder {
@@ -219,15 +223,45 @@ function ProductsTab({ toast }: { toast: ToastFn }) {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<AdminProduct | null>(null);
-  const [form, setForm] = useState({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4+', stock: 20, badge: '', active: true });
+  const [form, setForm] = useState({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4+', stock: 20, badge: '', active: true, coverImageUrl: '', fileUrl: '', fileName: '' });
   const [editStockId, setEditStockId] = useState<number | null>(null);
   const [editStockVal, setEditStockVal] = useState('');
+  const [uploadingKind, setUploadingKind] = useState<'cover' | 'file' | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(() => apiFetch('/api/admin/products').then(setProducts), []);
   useEffect(() => { load(); }, [load]);
 
-  const openAdd  = () => { setEditing(null); setForm({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4+', stock: 20, badge: '', active: true }); setShowForm(true); };
-  const openEdit = (p: AdminProduct) => { setEditing(p); setForm({ title: p.title, author: p.author || '', price: String(p.price), originalPrice: p.originalPrice ? String(p.originalPrice) : '', category: p.category, ages: p.ages || '4-8', stock: p.stock, badge: p.badge || '', active: p.active ?? true }); setShowForm(true); };
+  const openAdd  = () => { setEditing(null); setForm({ title: '', author: '', price: '', originalPrice: '', category: 'story', ages: '4+', stock: 20, badge: '', active: true, coverImageUrl: '', fileUrl: '', fileName: '' }); setUploadError(null); setShowForm(true); };
+  const openEdit = (p: AdminProduct) => { setEditing(p); setForm({ title: p.title, author: p.author || '', price: String(p.price), originalPrice: p.originalPrice ? String(p.originalPrice) : '', category: p.category, ages: p.ages || '4-8', stock: p.stock, badge: p.badge || '', active: p.active ?? true, coverImageUrl: p.coverImageUrl || '', fileUrl: p.fileUrl || '', fileName: p.fileName || '' }); setUploadError(null); setShowForm(true); };
+
+  const handleUpload = async (kind: 'cover' | 'file', file: File) => {
+    const ALLOWED_EXTS = kind === 'cover' ? ['.png', '.jpg', '.jpeg'] : ['.pdf', '.epub', '.png', '.jpg', '.jpeg'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      setUploadError(`${kind === 'cover' ? 'Cover image' : 'Story file'} must be one of: ${ALLOWED_EXTS.join(', ')}. Got: ${ext}`);
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) { setUploadError('File must be under 20 MB.'); return; }
+    setUploadingKind(kind);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/admin/stories/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error || 'Upload failed'); return; }
+      if (kind === 'cover') setForm(f => ({ ...f, coverImageUrl: data.url }));
+      else setForm(f => ({ ...f, fileUrl: data.url, fileName: data.name }));
+    } catch { setUploadError('Network error — could not reach the server'); }
+    finally { setUploadingKind(null); }
+  };
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -296,6 +330,44 @@ function ProductsTab({ toast }: { toast: ToastFn }) {
                 <input type="checkbox" id="active" checked={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} style={{ width: 18, height: 18 }} />
                 <label htmlFor="active" style={{ fontWeight: 700, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Active / Visible</label>
               </div>
+
+              {uploadError && (
+                <div style={{ gridColumn: '1 / -1', background: '#FEE2E2', color: '#DC2626', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', fontSize: '0.8rem', fontWeight: 700 }}>
+                  ✕ {uploadError}
+                </div>
+              )}
+
+              <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--cream-border)', paddingTop: '0.875rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Cover Image</label>
+                  <input type="file" ref={coverInputRef} accept=".png,.jpg,.jpeg" style={{ display: 'none' }}
+                    onChange={e => { if (e.target.files?.[0]) handleUpload('cover', e.target.files[0]); e.target.value = ''; }} />
+                  {form.coverImageUrl && (
+                    <img src={form.coverImageUrl} alt="Cover preview" style={{ width: 64, height: 90, objectFit: 'cover', borderRadius: '0.4rem', marginBottom: '0.4rem', display: 'block' }} />
+                  )}
+                  <button type="button" onClick={() => coverInputRef.current?.click()} disabled={uploadingKind === 'cover'}
+                    style={{ ...btnBase, background: form.coverImageUrl ? '#EFF6FF' : 'var(--maroon)', color: form.coverImageUrl ? '#2C5FA0' : 'white', border: form.coverImageUrl ? '1.5px solid #BFDBFE' : 'none', opacity: uploadingKind === 'cover' ? 0.6 : 1 }}>
+                    {uploadingKind === 'cover' ? '⏳ Uploading…' : form.coverImageUrl ? '↑ Replace cover' : '↑ Upload cover'}
+                  </button>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Story File (PDF/ePub)</label>
+                  <input type="file" ref={fileInputRef} accept=".pdf,.epub,.png,.jpg,.jpeg" style={{ display: 'none' }}
+                    onChange={e => { if (e.target.files?.[0]) handleUpload('file', e.target.files[0]); e.target.value = ''; }} />
+                  {form.fileUrl ? (
+                    <p style={{ margin: '0 0 0.4rem', fontSize: '0.78rem', color: '#22A05A', fontWeight: 700 }}>
+                      📎 {form.fileName} <a href={form.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2C5FA0', textDecoration: 'none' }}>preview ↗</a>
+                    </p>
+                  ) : (
+                    <p style={{ margin: '0 0 0.4rem', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>No file attached</p>
+                  )}
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingKind === 'file'}
+                    style={{ ...btnBase, background: form.fileUrl ? '#EFF6FF' : 'var(--maroon)', color: form.fileUrl ? '#2C5FA0' : 'white', border: form.fileUrl ? '1.5px solid #BFDBFE' : 'none', opacity: uploadingKind === 'file' ? 0.6 : 1 }}>
+                    {uploadingKind === 'file' ? '⏳ Uploading…' : form.fileUrl ? '↑ Replace file' : '↑ Upload file'}
+                  </button>
+                </div>
+              </div>
+
               <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                 <button type="button" onClick={() => setShowForm(false)} className="btn-outline-maroon" style={{ padding: '0.55rem 1.25rem', fontSize: '0.9rem' }}>Cancel</button>
                 <button type="submit" className="btn-maroon" style={{ padding: '0.55rem 1.25rem', fontSize: '0.9rem' }}>Save Product</button>
@@ -1078,7 +1150,7 @@ function ActivityTab() {
 }
 
 // ── Content management helpers ───────────────────────────────────────────────
-type ContentItem = { id: string; active?: boolean } & (ActivityCard | QuizQuestion | ParentGuide | Prayer);
+type ContentItem = { id: string; active?: boolean } & (ActivityCard | QuizQuestion | ParentGuide | Prayer | FreeStory);
 
 function useLocalStore<T extends { id: string; active?: boolean }>(key: string, defaults: T[]): [T[], (items: T[]) => void] {
   const get = (): T[] => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : defaults; } catch { return defaults; } };
@@ -1112,6 +1184,7 @@ const GUIDE_DEFAULTS: ParentGuide[] = [
   { id: '2', icon: '🍎', title: 'Teacher Resources',  desc: 'Lesson plans, printable worksheets, and classroom-ready slides for Sunday school and church schools.',       cta: 'Browse lessons →',  type: 'teacher', active: true },
   { id: '3', icon: '📅', title: 'Feast Day Calendar', desc: 'A year-round calendar of the great feasts and saints, with reminders you can follow as a family or class.',  cta: 'Open calendar →',   type: 'feast',   active: true },
 ];
+const FREE_STORY_DEFAULTS: FreeStory[] = [];
 
 // ── Generic content manager component ─────────────────────────────────────────
 function ContentManager<T extends { id: string; active?: boolean }>({ storageKey, defaults, fields, renderPreview, addLabel }: {
@@ -1203,7 +1276,75 @@ function ContentManager<T extends { id: string; active?: boolean }>({ storageKey
   );
 }
 
+const ACTIVITY_FILES_KEY = 'tk_activity_files';
+
+type ActivityFilesMap = Record<string, { url: string; name: string; filename: string }>;
+
+function getActivityFiles(): ActivityFilesMap {
+  try { return JSON.parse(localStorage.getItem(ACTIVITY_FILES_KEY) || '{}'); } catch { return {}; }
+}
+
 function ActivitiesTab() {
+  const [activityFiles, setActivityFiles] = useState<ActivityFilesMap>(getActivityFiles);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const currentActivities = (): ActivityCard[] => {
+    try { const s = localStorage.getItem('tk_activities'); return s ? JSON.parse(s) : ACTIVITY_DEFAULTS; }
+    catch { return ACTIVITY_DEFAULTS; }
+  };
+
+  const saveFiles = (next: ActivityFilesMap) => {
+    localStorage.setItem(ACTIVITY_FILES_KEY, JSON.stringify(next));
+    setActivityFiles({ ...next });
+  };
+
+  const handleUpload = async (activityId: string, file: File) => {
+    const ALLOWED_EXTS = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      setUploadError(`Only PDF, Word docs, and images are allowed (.pdf, .doc, .docx, .png, .jpg). Got: ${ext}`);
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('File must be under 20 MB.');
+      return;
+    }
+    setUploading(activityId);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/admin/activities/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error || 'Upload failed'); return; }
+      saveFiles({ ...activityFiles, [activityId]: { url: data.url, name: data.name, filename: data.filename } });
+    } catch { setUploadError('Network error — could not reach the server'); }
+    finally { setUploading(null); }
+  };
+
+  const handleRemove = async (activityId: string) => {
+    const fileInfo = activityFiles[activityId];
+    if (!fileInfo) return;
+    try {
+      await fetch(`${API}/api/admin/activities/file`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fileInfo.filename }),
+      });
+    } catch { /* best effort */ }
+    const next = { ...activityFiles };
+    delete next[activityId];
+    saveFiles(next);
+  };
+
+  const rowStyle: CSSProperties = { padding: '0.875rem 1rem', borderBottom: '1px solid var(--cream)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' };
+
   return (
     <div>
       <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Activities for Kids</h2>
@@ -1218,10 +1359,224 @@ function ActivitiesTab() {
           { key: 'desc',     label: 'Description', type: 'textarea' },
           { key: 'cta',      label: 'CTA text' },
           { key: 'ctaColor', label: 'CTA color', type: 'color' },
-          { key: 'fileUrl',  label: 'Download URL (PDF link)' },
           { key: 'active',   label: 'Active', type: 'toggle' },
         ]}
       />
+
+      {/* ── Uploadable files ──────────────────────────────────────────── */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Activity Files</h3>
+        <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+          Upload the actual coloring page, craft sheet, or printable for each activity. Users will see a download button on the Activities page.
+        </p>
+
+        {uploadError && (
+          <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700, marginBottom: '1rem' }}>
+            ✕ {uploadError}
+          </div>
+        )}
+
+        <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
+          {currentActivities().map(activity => {
+            const file = activityFiles[activity.id];
+            return (
+              <div key={activity.id} style={rowStyle}>
+                <input
+                  type="file"
+                  ref={el => { fileRefs.current[activity.id] = el; }}
+                  style={{ display: 'none' }}
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  onChange={e => { if (e.target.files?.[0]) handleUpload(activity.id, e.target.files[0]); e.target.value = ''; }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    {activity.icon} {activity.title}
+                    {!activity.active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>(hidden)</span>}
+                  </p>
+                  {file ? (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#22A05A', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      📎 {file.name}
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2C5FA0', textDecoration: 'none', fontWeight: 700 }}>preview ↗</a>
+                    </p>
+                  ) : (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>No file attached</p>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+                  <button
+                    onClick={() => fileRefs.current[activity.id]?.click()}
+                    disabled={uploading === activity.id}
+                    style={{ ...btnBase, background: file ? '#EFF6FF' : 'var(--maroon)', color: file ? '#2C5FA0' : 'white', border: file ? '1.5px solid #BFDBFE' : 'none', opacity: uploading === activity.id ? 0.6 : 1 }}
+                  >
+                    {uploading === activity.id ? '⏳ Uploading…' : file ? '↑ Replace' : '↑ Upload file'}
+                  </button>
+                  {file && (
+                    <ConfirmBtn
+                      label="Remove"
+                      onConfirm={() => handleRemove(activity.id)}
+                      btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const FREE_STORY_FILES_KEY = 'tk_free_story_files';
+
+type FreeStoryFilesMap = Record<string, { url: string; name: string; filename: string }>;
+
+function getFreeStoryFiles(): FreeStoryFilesMap {
+  try { return JSON.parse(localStorage.getItem(FREE_STORY_FILES_KEY) || '{}'); } catch { return {}; }
+}
+
+function FreeStoriesTab() {
+  const [storyFiles, setStoryFiles] = useState<FreeStoryFilesMap>(getFreeStoryFiles);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const currentStories = (): FreeStory[] => {
+    try { const s = localStorage.getItem('tk_free_stories'); return s ? JSON.parse(s) : FREE_STORY_DEFAULTS; }
+    catch { return FREE_STORY_DEFAULTS; }
+  };
+
+  const saveFiles = (next: FreeStoryFilesMap) => {
+    localStorage.setItem(FREE_STORY_FILES_KEY, JSON.stringify(next));
+    setStoryFiles({ ...next });
+  };
+
+  const handleUpload = async (storyId: string, file: File) => {
+    const ALLOWED_EXTS = ['.pdf', '.png', '.jpg', '.jpeg'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      setUploadError(`Only PDF and images are allowed (.pdf, .png, .jpg). Got: ${ext}`);
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('File must be under 20 MB.');
+      return;
+    }
+    setUploading(storyId);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/admin/free-stories/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error || 'Upload failed'); return; }
+      saveFiles({ ...storyFiles, [storyId]: { url: data.url, name: data.name, filename: data.filename } });
+    } catch { setUploadError('Network error — could not reach the server'); }
+    finally { setUploading(null); }
+  };
+
+  const handleRemove = async (storyId: string) => {
+    const fileInfo = storyFiles[storyId];
+    if (!fileInfo) return;
+    try {
+      await fetch(`${API}/api/admin/free-stories/file`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fileInfo.filename }),
+      });
+    } catch { /* best effort */ }
+    const next = { ...storyFiles };
+    delete next[storyId];
+    saveFiles(next);
+  };
+
+  const rowStyle: CSSProperties = { padding: '0.875rem 1rem', borderBottom: '1px solid var(--cream)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' };
+
+  return (
+    <div>
+      <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Free Stories</h2>
+      <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+        The public Stories page currently shows a "Coming Soon" notice. Prep your free read-along stories here so they're ready to publish once the page goes live.
+      </p>
+      <ContentManager<FreeStory>
+        storageKey="tk_free_stories"
+        defaults={FREE_STORY_DEFAULTS}
+        addLabel="Add Story"
+        renderPreview={s => `${s.icon} ${s.title}`}
+        fields={[
+          { key: 'icon',   label: 'Icon (emoji)' },
+          { key: 'title',  label: 'Title' },
+          { key: 'desc',   label: 'Description', type: 'textarea' },
+          { key: 'ages',   label: 'Age Range' },
+          { key: 'active', label: 'Active', type: 'toggle' },
+        ]}
+      />
+
+      {/* ── Uploadable files ──────────────────────────────────────────── */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Story Files</h3>
+        <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+          Upload the read-along PDF or illustrated pages for each free story.
+        </p>
+
+        {uploadError && (
+          <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700, marginBottom: '1rem' }}>
+            ✕ {uploadError}
+          </div>
+        )}
+
+        <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
+          {currentStories().length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>Add a story above first, then attach its file here.</p>}
+          {currentStories().map(story => {
+            const file = storyFiles[story.id];
+            return (
+              <div key={story.id} style={rowStyle}>
+                <input
+                  type="file"
+                  ref={el => { fileRefs.current[story.id] = el; }}
+                  style={{ display: 'none' }}
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={e => { if (e.target.files?.[0]) handleUpload(story.id, e.target.files[0]); e.target.value = ''; }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    {story.icon} {story.title}
+                    {!story.active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>(hidden)</span>}
+                  </p>
+                  {file ? (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#22A05A', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      📎 {file.name}
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2C5FA0', textDecoration: 'none', fontWeight: 700 }}>preview ↗</a>
+                    </p>
+                  ) : (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>No file attached</p>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+                  <button
+                    onClick={() => fileRefs.current[story.id]?.click()}
+                    disabled={uploading === story.id}
+                    style={{ ...btnBase, background: file ? '#EFF6FF' : 'var(--maroon)', color: file ? '#2C5FA0' : 'white', border: file ? '1.5px solid #BFDBFE' : 'none', opacity: uploading === story.id ? 0.6 : 1 }}
+                  >
+                    {uploading === story.id ? '⏳ Uploading…' : file ? '↑ Replace' : '↑ Upload file'}
+                  </button>
+                  {file && (
+                    <ConfirmBtn
+                      label="Remove"
+                      onConfirm={() => handleRemove(story.id)}
+                      btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1359,7 +1714,75 @@ function QuizzesTab() {
   );
 }
 
+const PRAYER_FILES_KEY = 'tk_prayer_files';
+
+type PrayerFilesMap = Record<string, { url: string; name: string; filename: string }>;
+
+function getPrayerFiles(): PrayerFilesMap {
+  try { return JSON.parse(localStorage.getItem(PRAYER_FILES_KEY) || '{}'); } catch { return {}; }
+}
+
 function PrayersTab() {
+  const [prayerFiles, setPrayerFiles] = useState<PrayerFilesMap>(getPrayerFiles);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const currentPrayers = (): Prayer[] => {
+    try { const s = localStorage.getItem('tk_prayers'); return s ? JSON.parse(s) : PRAYER_DEFAULTS; }
+    catch { return PRAYER_DEFAULTS; }
+  };
+
+  const saveFiles = (next: PrayerFilesMap) => {
+    localStorage.setItem(PRAYER_FILES_KEY, JSON.stringify(next));
+    setPrayerFiles({ ...next });
+  };
+
+  const handleUpload = async (prayerId: string, file: File) => {
+    const ALLOWED_EXTS = ['.pdf', '.png', '.jpg', '.jpeg'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      setUploadError(`Only PDF and images are allowed (.pdf, .png, .jpg). Got: ${ext}`);
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('File must be under 20 MB.');
+      return;
+    }
+    setUploading(prayerId);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/admin/prayers/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error || 'Upload failed'); return; }
+      saveFiles({ ...prayerFiles, [prayerId]: { url: data.url, name: data.name, filename: data.filename } });
+    } catch { setUploadError('Network error — could not reach the server'); }
+    finally { setUploading(null); }
+  };
+
+  const handleRemove = async (prayerId: string) => {
+    const fileInfo = prayerFiles[prayerId];
+    if (!fileInfo) return;
+    try {
+      await fetch(`${API}/api/admin/prayers/file`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fileInfo.filename }),
+      });
+    } catch { /* best effort */ }
+    const next = { ...prayerFiles };
+    delete next[prayerId];
+    saveFiles(next);
+  };
+
+  const rowStyle: CSSProperties = { padding: '0.875rem 1rem', borderBottom: '1px solid var(--cream)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' };
+
   return (
     <div>
       <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)' }}>Prayer Cards</h2>
@@ -1377,6 +1800,67 @@ function PrayersTab() {
           { key: 'active',      label: 'Active', type: 'toggle' },
         ]}
       />
+
+      {/* ── Uploadable files ──────────────────────────────────────────── */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Prayer Card Files</h3>
+        <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+          Upload a designed, printable card (PDF or image) for each prayer. If attached, users get this file instead of the auto-generated print page.
+        </p>
+
+        {uploadError && (
+          <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700, marginBottom: '1rem' }}>
+            ✕ {uploadError}
+          </div>
+        )}
+
+        <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
+          {currentPrayers().map(prayer => {
+            const file = prayerFiles[prayer.id];
+            return (
+              <div key={prayer.id} style={rowStyle}>
+                <input
+                  type="file"
+                  ref={el => { fileRefs.current[prayer.id] = el; }}
+                  style={{ display: 'none' }}
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={e => { if (e.target.files?.[0]) handleUpload(prayer.id, e.target.files[0]); e.target.value = ''; }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    {prayer.icon} {prayer.title}
+                    {!prayer.active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>(hidden)</span>}
+                  </p>
+                  {file ? (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#22A05A', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      📎 {file.name}
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2C5FA0', textDecoration: 'none', fontWeight: 700 }}>preview ↗</a>
+                    </p>
+                  ) : (
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>No file attached — using auto-generated print page</p>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+                  <button
+                    onClick={() => fileRefs.current[prayer.id]?.click()}
+                    disabled={uploading === prayer.id}
+                    style={{ ...btnBase, background: file ? '#EFF6FF' : 'var(--maroon)', color: file ? '#2C5FA0' : 'white', border: file ? '1.5px solid #BFDBFE' : 'none', opacity: uploading === prayer.id ? 0.6 : 1 }}
+                  >
+                    {uploading === prayer.id ? '⏳ Uploading…' : file ? '↑ Replace' : '↑ Upload file'}
+                  </button>
+                  {file && (
+                    <ConfirmBtn
+                      label="Remove"
+                      onConfirm={() => handleRemove(prayer.id)}
+                      btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1776,6 +2260,7 @@ const TABS = [
   { id: 'quizzes',     label: 'Quizzes',     icon: '🧠', key: 'q' },
   { id: 'prayers',     label: 'Prayers',     icon: '🙏', key: 'y' },
   { id: 'guides',      label: 'Guides',      icon: '📋', key: 'g' },
+  { id: 'free-stories', label: 'Free Stories', icon: '📖', key: 'f' },
   { id: 'activity',    label: 'Audit Log',   icon: '📈', key: 'l' },
   { id: 'settings',    label: 'Settings',    icon: '⚙️',  key: 'x' },
 ];
@@ -2082,6 +2567,7 @@ export default function Admin() {
           {tab === 'quizzes'     && <QuizzesTab />}
           {tab === 'prayers'     && <PrayersTab />}
           {tab === 'guides'      && <GuidesTab />}
+          {tab === 'free-stories' && <FreeStoriesTab />}
           {tab === 'activity'    && <ActivityTab />}
           {tab === 'settings'    && <SettingsTab   toast={addToast} />}
         </main>

@@ -92,6 +92,13 @@ function getPrayers(): Prayer[] {
   }
 }
 
+const PRAYER_FILES_KEY = 'tk_prayer_files';
+type PrayerFilesMap = Record<string, { url: string; name: string; filename: string }>;
+
+function getPrayerFiles(): PrayerFilesMap {
+  try { return JSON.parse(localStorage.getItem(PRAYER_FILES_KEY) || '{}'); } catch { return {}; }
+}
+
 export default function Calendar() {
   usePageMeta('Prayer Corner', 'Prayers for children, an Oriental Orthodox feast calendar, and gentle ways to grow with God every day.');
   const today = new Date();
@@ -100,6 +107,7 @@ export default function Calendar() {
   const [email, setEmail] = useState('');
   const { addToast } = useToast();
   const prayers = getPrayers();
+  const prayerFiles = getPrayerFiles();
 
   const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
@@ -193,22 +201,36 @@ export default function Calendar() {
           <p style={{ textAlign: 'center', fontFamily: 'Fredoka, sans-serif', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--gold-dark)', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>LITTLE PRAYERS</p>
           <h2 style={{ textAlign: 'center', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', margin: '0 0 3rem', color: '#1B2A4A' }}>Prayers to learn by heart</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
-            {prayers.map(p => (
+            {prayers.map(p => {
+              const file = prayerFiles[p.id];
+              return (
               <div key={p.id} className="card" style={{ padding: '1.75rem', background: 'white', borderTop: `4px solid ${p.borderColor}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                   <div style={{ fontSize: '1.5rem' }}>{p.icon}</div>
-                  <button
-                    onClick={() => {
-                      const w = window.open('', '_blank', 'width=480,height=520');
-                      if (!w) return;
-                      w.document.write(`<!DOCTYPE html><html><head><title>${p.title}</title><style>body{font-family:Georgia,serif;padding:2.5rem;max-width:380px;margin:auto;color:#1B2A4A}h2{color:#6B2020;margin-bottom:.5rem;font-size:1.3rem}p.text{font-style:italic;line-height:1.8;color:#333;font-size:1.05rem;border-left:4px solid ${p.borderColor};padding-left:1rem;margin:1.25rem 0}p.note{color:#888;font-size:.85rem}footer{margin-top:2rem;font-size:.75rem;color:#bbb}button{margin-top:1.5rem;padding:.5rem 1.25rem;background:#6B2020;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.9rem}@media print{button{display:none}}</style></head><body><h2>${p.icon} ${p.title}</h2><p class="text">"${p.text}"</p><p class="note">${p.note}</p><footer>Tiggy's Kingdom · tiggyskingdom.com</footer><button onclick="window.print()">🖨 Print</button></body></html>`);
-                      w.document.close();
-                    }}
-                    title="Print prayer"
-                    style={{ background: 'none', border: '1px solid var(--cream-border)', borderRadius: '0.4rem', padding: '0.25rem 0.5rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}
-                  >
-                    🖨 Print
-                  </button>
+                  {file ? (
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Download prayer card"
+                      style={{ background: 'none', border: '1px solid var(--cream-border)', borderRadius: '0.4rem', padding: '0.25rem 0.5rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textDecoration: 'none' }}
+                    >
+                      📥 Download Card
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const w = window.open('', '_blank', 'width=480,height=520');
+                        if (!w) return;
+                        w.document.write(`<!DOCTYPE html><html><head><title>${p.title}</title><style>body{font-family:Georgia,serif;padding:2.5rem;max-width:380px;margin:auto;color:#1B2A4A}h2{color:#6B2020;margin-bottom:.5rem;font-size:1.3rem}p.text{font-style:italic;line-height:1.8;color:#333;font-size:1.05rem;border-left:4px solid ${p.borderColor};padding-left:1rem;margin:1.25rem 0}p.note{color:#888;font-size:.85rem}footer{margin-top:2rem;font-size:.75rem;color:#bbb}button{margin-top:1.5rem;padding:.5rem 1.25rem;background:#6B2020;color:white;border:none;border-radius:6px;cursor:pointer;font-size:.9rem}@media print{button{display:none}}</style></head><body><h2>${p.icon} ${p.title}</h2><p class="text">"${p.text}"</p><p class="note">${p.note}</p><footer>Tiggy's Kingdom · tiggyskingdom.com</footer><button onclick="window.print()">🖨 Print</button></body></html>`);
+                        w.document.close();
+                      }}
+                      title="Print prayer"
+                      style={{ background: 'none', border: '1px solid var(--cream-border)', borderRadius: '0.4rem', padding: '0.25rem 0.5rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}
+                    >
+                      🖨 Print
+                    </button>
+                  )}
                 </div>
                 <h3 style={{ fontFamily: 'Fraunces, serif', fontWeight: 700, fontSize: '1rem', margin: '0 0 0.75rem', color: '#1B2A4A' }}>{p.title}</h3>
                 <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75, fontWeight: 600, margin: '0 0 0.875rem', fontSize: '0.9rem', fontStyle: 'italic' }}>
@@ -216,7 +238,8 @@ export default function Calendar() {
                 </p>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>{p.note}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
