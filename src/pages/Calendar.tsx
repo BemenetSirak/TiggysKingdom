@@ -77,10 +77,10 @@ export interface Prayer {
 }
 
 const DEFAULT_PRAYERS: Prayer[] = [
-  { id: '1', icon: '🌅', title: 'Morning Prayer',      borderColor: '#F97316', text: 'Thank You, God, for this new day. Keep me kind in work and play. Help me love and help me share, and feel You with me everywhere.', note: 'A gentle way to begin the morning with gratitude.' },
-  { id: '2', icon: '🌙', title: 'Evening Prayer',       borderColor: '#7C3AED', text: 'Thank You, God, for all today — the friends, the food, the time to play. Watch me as I close my eyes, until the morning sun will rise.', note: 'Perfect for the end of the bedtime routine.' },
-  { id: '3', icon: '🍽', title: 'Before Meals',         borderColor: '#22A05A', text: 'Bless this food we\'re going to eat, and bless the hands that made our treat. Thank You, God, for all we share. Amen.', note: 'A short blessing the whole family can say together.' },
-  { id: '4', icon: '👼', title: 'To My Guardian Angel', borderColor: '#3B82F6', text: 'Angel sent to be my friend, stay beside me to the end. Guide my steps and keep me near to all that\'s good and all that\'s dear.', note: 'Help little ones feel safe and watched over.' },
+  { id: '1', icon: '🌅', title: 'Morning Prayer',      borderColor: '#F97316', text: 'Thank You, God, for this new day. Keep me kind in work and play. Help me love and help me share, and feel You with me everywhere.', note: 'A gentle way to begin the morning with gratitude.', active: true },
+  { id: '2', icon: '🌙', title: 'Evening Prayer',       borderColor: '#7C3AED', text: 'Thank You, God, for all today — the friends, the food, the time to play. Watch me as I close my eyes, until the morning sun will rise.', note: 'Perfect for the end of the bedtime routine.', active: true },
+  { id: '3', icon: '🍽', title: 'Before Meals',         borderColor: '#22A05A', text: 'Bless this food we\'re going to eat, and bless the hands that made our treat. Thank You, God, for all we share. Amen.', note: 'A short blessing the whole family can say together.', active: true },
+  { id: '4', icon: '👼', title: 'To My Guardian Angel', borderColor: '#3B82F6', text: 'Angel sent to be my friend, stay beside me to the end. Guide my steps and keep me near to all that\'s good and all that\'s dear.', note: 'Help little ones feel safe and watched over.', active: true },
 ];
 
 function getPrayers(): Prayer[] {
@@ -99,6 +99,13 @@ function getPrayerFiles(): PrayerFilesMap {
   try { return JSON.parse(localStorage.getItem(PRAYER_FILES_KEY) || '{}'); } catch { return {}; }
 }
 
+const CALENDAR_FILE_KEY = 'tk_calendar_file';
+type CalendarFile = { url: string; name: string; filename: string } | null;
+
+function getCalendarFile(): CalendarFile {
+  try { return JSON.parse(localStorage.getItem(CALENDAR_FILE_KEY) || 'null'); } catch { return null; }
+}
+
 export default function Calendar() {
   usePageMeta('Prayer Corner', 'Prayers for children, an Oriental Orthodox feast calendar, and gentle ways to grow with God every day.');
   const today = new Date();
@@ -106,8 +113,9 @@ export default function Calendar() {
   const [year, setYear]   = useState(today.getFullYear());
   const [email, setEmail] = useState('');
   const { addToast } = useToast();
-  const prayers = getPrayers();
+  const prayers = getPrayers().filter(p => p.active ?? true);
   const prayerFiles = getPrayerFiles();
+  const calendarFile = getCalendarFile();
 
   const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
@@ -252,6 +260,20 @@ export default function Calendar() {
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, margin: '0 auto 1.75rem', maxWidth: 480, lineHeight: 1.6 }}>
             The great feasts and beloved saints, all year long. Tap a month to explore.
           </p>
+
+          {calendarFile && (
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+              <a
+                href={calendarFile.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-gold"
+                style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-block' }}
+              >
+                📥 Download Printable Calendar
+              </a>
+            </div>
+          )}
 
           {/* Month tabs (scrollable) */}
           <div style={{ display: 'flex', gap: '0.375rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '1.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>

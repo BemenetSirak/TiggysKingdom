@@ -770,6 +770,7 @@ registerUploadRoutes("activities", "activity-files", [".pdf", ".doc", ".docx", "
 registerUploadRoutes("stories", "story-files", [".pdf", ".epub", ".png", ".jpg", ".jpeg"]);
 registerUploadRoutes("free-stories", "free-story-files", [".pdf", ".png", ".jpg", ".jpeg"]);
 registerUploadRoutes("prayers", "prayer-files", [".pdf", ".png", ".jpg", ".jpeg"]);
+registerUploadRoutes("calendar", "calendar-files", [".pdf", ".png", ".jpg", ".jpeg"]);
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get("/health", (_req: Request, res: Response) => res.json({ status: "ok", time: new Date().toISOString() }));

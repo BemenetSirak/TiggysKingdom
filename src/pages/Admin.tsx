@@ -1153,7 +1153,13 @@ function ActivityTab() {
 type ContentItem = { id: string; active?: boolean } & (ActivityCard | QuizQuestion | ParentGuide | Prayer | FreeStory);
 
 function useLocalStore<T extends { id: string; active?: boolean }>(key: string, defaults: T[]): [T[], (items: T[]) => void] {
-  const get = (): T[] => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : defaults; } catch { return defaults; } };
+  const get = (): T[] => {
+    try {
+      const s = localStorage.getItem(key);
+      const parsed: T[] = s ? JSON.parse(s) : defaults;
+      return parsed.map(item => ({ ...item, active: item.active ?? true }));
+    } catch { return defaults; }
+  };
   const [items, setItems] = useState<T[]>(get);
   const save = (next: T[]) => { localStorage.setItem(key, JSON.stringify(next)); setItems(next); };
   return [items, save];
@@ -1174,10 +1180,10 @@ const QUIZ_DEFAULTS: QuizQuestion[] = [
   { id: '3', question: 'How many days did Jonah spend inside the big fish? 🐟', options: ['One day','Three days','Seven days'], correctIndex: 1, active: true },
 ];
 const PRAYER_DEFAULTS: Prayer[] = [
-  { id: '1', icon: '🌅', title: 'Morning Prayer',       borderColor: '#F97316', text: "Thank You, God, for this new day. Keep me kind in work and play. Help me love and help me share, and feel You with me everywhere.", note: 'A gentle way to begin the morning with gratitude.' },
-  { id: '2', icon: '🌙', title: 'Evening Prayer',        borderColor: '#7C3AED', text: "Thank You, God, for all today — the friends, the food, the time to play. Watch me as I close my eyes, until the morning sun will rise.", note: 'Perfect for the end of the bedtime routine.' },
-  { id: '3', icon: '🍽',  title: 'Before Meals',          borderColor: '#22A05A', text: "Bless this food we're going to eat, and bless the hands that made our treat. Thank You, God, for all we share. Amen.", note: 'A short blessing the whole family can say together.' },
-  { id: '4', icon: '👼', title: 'To My Guardian Angel',  borderColor: '#3B82F6', text: "Angel sent to be my friend, stay beside me to the end. Guide my steps and keep me near to all that's good and all that's dear.", note: 'Help little ones feel safe and watched over.' },
+  { id: '1', icon: '🌅', title: 'Morning Prayer',       borderColor: '#F97316', text: "Thank You, God, for this new day. Keep me kind in work and play. Help me love and help me share, and feel You with me everywhere.", note: 'A gentle way to begin the morning with gratitude.', active: true },
+  { id: '2', icon: '🌙', title: 'Evening Prayer',        borderColor: '#7C3AED', text: "Thank You, God, for all today — the friends, the food, the time to play. Watch me as I close my eyes, until the morning sun will rise.", note: 'Perfect for the end of the bedtime routine.', active: true },
+  { id: '3', icon: '🍽',  title: 'Before Meals',          borderColor: '#22A05A', text: "Bless this food we're going to eat, and bless the hands that made our treat. Thank You, God, for all we share. Amen.", note: 'A short blessing the whole family can say together.', active: true },
+  { id: '4', icon: '👼', title: 'To My Guardian Angel',  borderColor: '#3B82F6', text: "Angel sent to be my friend, stay beside me to the end. Guide my steps and keep me near to all that's good and all that's dear.", note: 'Help little ones feel safe and watched over.', active: true },
 ];
 const GUIDE_DEFAULTS: ParentGuide[] = [
   { id: '1', icon: '📋', title: 'Parent Guides',      desc: 'One-page guides for each episode with the lesson, discussion questions, and a simple follow-up activity.',   cta: 'Download guides →', type: 'parent',  active: true },
@@ -1722,11 +1728,67 @@ function getPrayerFiles(): PrayerFilesMap {
   try { return JSON.parse(localStorage.getItem(PRAYER_FILES_KEY) || '{}'); } catch { return {}; }
 }
 
+const CALENDAR_FILE_KEY = 'tk_calendar_file';
+
+type CalendarFile = { url: string; name: string; filename: string } | null;
+
+function getCalendarFile(): CalendarFile {
+  try { return JSON.parse(localStorage.getItem(CALENDAR_FILE_KEY) || 'null'); } catch { return null; }
+}
+
 function PrayersTab() {
   const [prayerFiles, setPrayerFiles] = useState<PrayerFilesMap>(getPrayerFiles);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const [calendarFile, setCalendarFile] = useState<CalendarFile>(getCalendarFile);
+  const [uploadingCalendar, setUploadingCalendar] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
+  const calendarInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleCalendarUpload = async (file: File) => {
+    const ALLOWED_EXTS = ['.pdf', '.png', '.jpg', '.jpeg'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      setCalendarError(`Only PDF and images are allowed (.pdf, .png, .jpg). Got: ${ext}`);
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setCalendarError('File must be under 20 MB.');
+      return;
+    }
+    setUploadingCalendar(true);
+    setCalendarError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/admin/calendar/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { setCalendarError(data.error || 'Upload failed'); return; }
+      const next = { url: data.url, name: data.name, filename: data.filename };
+      localStorage.setItem(CALENDAR_FILE_KEY, JSON.stringify(next));
+      setCalendarFile(next);
+    } catch { setCalendarError('Network error — could not reach the server'); }
+    finally { setUploadingCalendar(false); }
+  };
+
+  const handleCalendarRemove = async () => {
+    if (!calendarFile) return;
+    try {
+      await fetch(`${API}/api/admin/calendar/file`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: calendarFile.filename }),
+      });
+    } catch { /* best effort */ }
+    localStorage.removeItem(CALENDAR_FILE_KEY);
+    setCalendarFile(null);
+  };
 
   const currentPrayers = (): Prayer[] => {
     try { const s = localStorage.getItem('tk_prayers'); return s ? JSON.parse(s) : PRAYER_DEFAULTS; }
@@ -1859,6 +1921,54 @@ function PrayersTab() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── Printable feast day calendar ──────────────────────────────── */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Printable Feast Day Calendar</h3>
+        <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+          Upload a printable calendar (PDF or image). When attached, users see a "Download Calendar" button on the Prayer Corner page.
+        </p>
+
+        {calendarError && (
+          <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700, marginBottom: '1rem' }}>
+            ✕ {calendarError}
+          </div>
+        )}
+
+        <div style={{ background: 'white', borderRadius: '0.875rem', border: '1px solid var(--cream-border)', padding: '1rem' }}>
+          <input
+            type="file"
+            ref={calendarInputRef}
+            style={{ display: 'none' }}
+            accept=".pdf,.png,.jpg,.jpeg"
+            onChange={e => { if (e.target.files?.[0]) handleCalendarUpload(e.target.files[0]); e.target.value = ''; }}
+          />
+          {calendarFile ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#22A05A', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                📎 {calendarFile.name}
+                <a href={calendarFile.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2C5FA0', textDecoration: 'none', fontWeight: 700 }}>preview ↗</a>
+              </p>
+              <button
+                onClick={() => calendarInputRef.current?.click()}
+                disabled={uploadingCalendar}
+                style={{ ...btnBase, background: '#EFF6FF', color: '#2C5FA0', border: '1.5px solid #BFDBFE', opacity: uploadingCalendar ? 0.6 : 1 }}
+              >
+                {uploadingCalendar ? '⏳ Uploading…' : '↑ Replace'}
+              </button>
+              <ConfirmBtn label="Remove" onConfirm={handleCalendarRemove} btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }} />
+            </div>
+          ) : (
+            <button
+              onClick={() => calendarInputRef.current?.click()}
+              disabled={uploadingCalendar}
+              style={{ ...btnBase, background: 'var(--maroon)', color: 'white', border: 'none', opacity: uploadingCalendar ? 0.6 : 1 }}
+            >
+              {uploadingCalendar ? '⏳ Uploading…' : '↑ Upload Calendar'}
+            </button>
+          )}
         </div>
       </div>
     </div>
