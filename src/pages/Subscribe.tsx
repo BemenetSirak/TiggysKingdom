@@ -2,6 +2,9 @@
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { checkDownloadAccess, recordDownload, downloadBlockMessage } from '../lib/downloads';
 
 const GUIDES_KEY = 'tk_parent_guides';
 const GUIDE_FILES_KEY = 'tk_guide_files';
@@ -86,12 +89,41 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+const PLANS = {
+  kingdom_lamb: { planName: 'Kingdom Lamb', priceMonthly: 4.99 },
+  royal_family: { planName: 'Royal Family', priceMonthly: 9.99 },
+  monastery:    { planName: 'Monastery',    priceMonthly: 29.99 },
+} as const;
+
 export default function Subscribe() {
   usePageMeta('For Parents', 'Safe, faithful Orthodox content your children will love. Parent guides, teacher resources, and feast-day calendars — all free.');
   const guides = getGuides().filter(g => g.active);
   const guideFiles = getGuideFiles();
   const [email, setEmail] = useState('');
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleChoosePlan = async (planId: keyof typeof PLANS) => {
+    if (!user || user.isGuest) { navigate('/login', { state: { from: '/subscribe' } }); return; }
+    const plan = PLANS[planId];
+    setCheckingOut(planId);
+    try {
+      const res = await fetch(`${API}/create-subscription-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, planName: plan.planName, priceMonthly: plan.priceMonthly, userId: user.id, customerEmail: user.email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) window.location.href = data.url;
+      else addToast('Could not start checkout. Please try again.', 'error');
+    } catch {
+      addToast('Server offline. Please make sure the backend is running.', 'warning');
+    } finally {
+      setCheckingOut(null);
+    }
+  };
 
   const handleSubscribe = async (e: FormEvent) => {
     e.preventDefault();
@@ -150,7 +182,13 @@ export default function Subscribe() {
                       <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$0</span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
                     </div>
-                    <button className="btn-outline-maroon" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Get Started</button>
+                    <button
+                      className="btn-outline-maroon"
+                      style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}
+                      onClick={() => navigate(user && !user.isGuest ? '/dashboard' : '/login', { state: { from: '/subscribe' } })}
+                    >
+                      Get Started
+                    </button>
                   </th>
 
                   {/* Kingdom Lamb */}
@@ -165,7 +203,14 @@ export default function Subscribe() {
                       <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$4.99</span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
                     </div>
-                    <button className="btn-gold" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Start Free Trial</button>
+                    <button
+                      className="btn-gold"
+                      style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}
+                      disabled={checkingOut === 'kingdom_lamb'}
+                      onClick={() => handleChoosePlan('kingdom_lamb')}
+                    >
+                      {checkingOut === 'kingdom_lamb' ? '...' : 'Start Free Trial'}
+                    </button>
                   </th>
 
                   {/* Royal Family */}
@@ -179,7 +224,14 @@ export default function Subscribe() {
                       <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: 'white' }}>$9.99</span>
                       <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>/month</span>
                     </div>
-                    <button className="btn-gold" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Start Free Trial</button>
+                    <button
+                      className="btn-gold"
+                      style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}
+                      disabled={checkingOut === 'royal_family'}
+                      onClick={() => handleChoosePlan('royal_family')}
+                    >
+                      {checkingOut === 'royal_family' ? '...' : 'Start Free Trial'}
+                    </button>
                   </th>
 
                   {/* Monastery */}
@@ -193,7 +245,14 @@ export default function Subscribe() {
                       <span style={{ fontFamily: 'Fraunces, serif', fontSize: '1.75rem', fontWeight: 700, color: '#1B2A4A' }}>$29.99</span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>/month</span>
                     </div>
-                    <button className="btn-maroon" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}>Subscribe Now</button>
+                    <button
+                      className="btn-maroon"
+                      style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '0.45rem 0.5rem' }}
+                      disabled={checkingOut === 'monastery'}
+                      onClick={() => handleChoosePlan('monastery')}
+                    >
+                      {checkingOut === 'monastery' ? '...' : 'Subscribe Now'}
+                    </button>
                   </th>
                 </tr>
               </thead>
@@ -312,6 +371,11 @@ export default function Subscribe() {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'var(--maroon)', color: 'white', borderRadius: '0.5rem', padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.875rem', textDecoration: 'none', fontFamily: 'Fredoka, sans-serif', width: 'fit-content' }}
+                      onClick={e => {
+                        const check = checkDownloadAccess(user);
+                        if (!check.allowed) { e.preventDefault(); addToast(downloadBlockMessage(check.reason!), 'info'); return; }
+                        recordDownload(user);
+                      }}
                     >
                       ↓ {g.cta}
                     </a>

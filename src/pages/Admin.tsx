@@ -759,7 +759,7 @@ function SubscribersTab({ toast }: { toast: ToastFn }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Subscribers</h2>
+        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Newsletter Subscribers</h2>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={() => setShowBlast(true)} className="btn-gold" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>✉ Email Blast</button>
           <button onClick={() => {
@@ -873,7 +873,7 @@ function UsersTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Registered Users</h2>
+        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Customer Accounts</h2>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <span style={{ background: 'var(--cream-dark)', color: 'var(--text-secondary)', padding: '0.3rem 0.875rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.85rem' }}>{users.length} total</span>
           <button onClick={() => {
@@ -1088,7 +1088,7 @@ function ActivityTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Activity Log</h2>
+        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Activity History</h2>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={exportCSV} disabled={filtered.length === 0} style={{ padding: '0.3rem 0.875rem', borderRadius: '0.4rem', border: '1.5px solid var(--cream-border)', background: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: '#22C55E' }}>
             ⬇ Export CSV
@@ -1193,16 +1193,21 @@ const GUIDE_DEFAULTS: ParentGuide[] = [
 const FREE_STORY_DEFAULTS: FreeStory[] = [];
 
 // ── Generic content manager component ─────────────────────────────────────────
-function ContentManager<T extends { id: string; active?: boolean }>({ storageKey, defaults, fields, renderPreview, addLabel }: {
+function ContentManager<T extends { id: string; active?: boolean }>({ storageKey, defaults, fields, renderPreview, addLabel, onItemsChange, onDelete }: {
   storageKey: string;
   defaults: T[];
   fields: Array<{ key: keyof T; label: string; type?: 'text' | 'textarea' | 'color' | 'select' | 'toggle'; options?: string[] }>;
   renderPreview: (item: T) => string;
   addLabel: string;
+  onItemsChange?: (items: T[]) => void;
+  onDelete?: (id: string) => void;
 }) {
-  const [items, setItems] = useLocalStore<T>(storageKey, defaults);
+  const [items, setItemsRaw] = useLocalStore<T>(storageKey, defaults);
+  const setItems = (next: T[]) => { setItemsRaw(next); onItemsChange?.(next); };
   const [editing, setEditing] = useState<T | null>(null);
   const [form, setForm] = useState<Partial<T>>({});
+
+  useEffect(() => { onItemsChange?.(items); }, []);
 
   const startNew = () => {
     const blank: Partial<T> = { id: Date.now().toString(), active: true } as Partial<T>;
@@ -1291,15 +1296,11 @@ function getActivityFiles(): ActivityFilesMap {
 }
 
 function ActivitiesTab() {
+  const [activities, setActivities] = useState<ActivityCard[]>([]);
   const [activityFiles, setActivityFiles] = useState<ActivityFilesMap>(getActivityFiles);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  const currentActivities = (): ActivityCard[] => {
-    try { const s = localStorage.getItem('tk_activities'); return s ? JSON.parse(s) : ACTIVITY_DEFAULTS; }
-    catch { return ACTIVITY_DEFAULTS; }
-  };
 
   const saveFiles = (next: ActivityFilesMap) => {
     localStorage.setItem(ACTIVITY_FILES_KEY, JSON.stringify(next));
@@ -1359,6 +1360,8 @@ function ActivitiesTab() {
         defaults={ACTIVITY_DEFAULTS}
         addLabel="Add Activity"
         renderPreview={a => `${a.icon} ${a.title}`}
+        onItemsChange={setActivities}
+        onDelete={handleRemove}
         fields={[
           { key: 'icon',     label: 'Icon (emoji)' },
           { key: 'title',    label: 'Title' },
@@ -1383,7 +1386,7 @@ function ActivitiesTab() {
         )}
 
         <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
-          {currentActivities().map(activity => {
+          {activities.map(activity => {
             const file = activityFiles[activity.id];
             return (
               <div key={activity.id} style={rowStyle}>
@@ -1441,20 +1444,33 @@ function getFreeStoryFiles(): FreeStoryFilesMap {
   try { return JSON.parse(localStorage.getItem(FREE_STORY_FILES_KEY) || '{}'); } catch { return {}; }
 }
 
+const FREE_STORY_COVERS_KEY = 'tk_free_story_covers';
+
+type FreeStoryCoverMap = Record<string, { url: string; filename: string }>;
+
+function getFreeStoryCovers(): FreeStoryCoverMap {
+  try { return JSON.parse(localStorage.getItem(FREE_STORY_COVERS_KEY) || '{}'); } catch { return {}; }
+}
+
 function FreeStoriesTab() {
+  const [stories, setStories] = useState<FreeStory[]>([]);
   const [storyFiles, setStoryFiles] = useState<FreeStoryFilesMap>(getFreeStoryFiles);
+  const [storyCovers, setStoryCovers] = useState<FreeStoryCoverMap>(getFreeStoryCovers);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadingCover, setUploadingCover] = useState<string | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  const currentStories = (): FreeStory[] => {
-    try { const s = localStorage.getItem('tk_free_stories'); return s ? JSON.parse(s) : FREE_STORY_DEFAULTS; }
-    catch { return FREE_STORY_DEFAULTS; }
-  };
+  const coverRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const saveFiles = (next: FreeStoryFilesMap) => {
     localStorage.setItem(FREE_STORY_FILES_KEY, JSON.stringify(next));
     setStoryFiles({ ...next });
+  };
+
+  const saveCovers = (next: FreeStoryCoverMap) => {
+    localStorage.setItem(FREE_STORY_COVERS_KEY, JSON.stringify(next));
+    setStoryCovers({ ...next });
   };
 
   const handleUpload = async (storyId: string, file: File) => {
@@ -1500,6 +1516,54 @@ function FreeStoriesTab() {
     saveFiles(next);
   };
 
+  const handleCoverUpload = async (storyId: string, file: File) => {
+    const ALLOWED_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) {
+      setCoverError(`Only images are allowed (.png, .jpg, .webp). Got: ${ext}`);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setCoverError('Cover image must be under 10 MB.');
+      return;
+    }
+    setUploadingCover(storyId);
+    setCoverError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/admin/free-story-covers/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { setCoverError(data.error || 'Upload failed'); return; }
+      saveCovers({ ...storyCovers, [storyId]: { url: data.url, filename: data.filename } });
+    } catch { setCoverError('Network error — could not reach the server'); }
+    finally { setUploadingCover(null); }
+  };
+
+  const handleCoverRemove = async (storyId: string) => {
+    const coverInfo = storyCovers[storyId];
+    if (!coverInfo) return;
+    try {
+      await fetch(`${API}/api/admin/free-story-covers/file`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: coverInfo.filename }),
+      });
+    } catch { /* best effort */ }
+    const next = { ...storyCovers };
+    delete next[storyId];
+    saveCovers(next);
+  };
+
+  const handleDeleteStory = (storyId: string) => {
+    handleRemove(storyId);
+    handleCoverRemove(storyId);
+  };
+
   const rowStyle: CSSProperties = { padding: '0.875rem 1rem', borderBottom: '1px solid var(--cream)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' };
 
   return (
@@ -1513,6 +1577,8 @@ function FreeStoriesTab() {
         defaults={FREE_STORY_DEFAULTS}
         addLabel="Add Story"
         renderPreview={s => `${s.icon} ${s.title}`}
+        onItemsChange={setStories}
+        onDelete={handleDeleteStory}
         fields={[
           { key: 'icon',   label: 'Icon (emoji)' },
           { key: 'title',  label: 'Title' },
@@ -1521,6 +1587,66 @@ function FreeStoriesTab() {
           { key: 'active', label: 'Active', type: 'toggle' },
         ]}
       />
+
+      {/* ── Cover images ──────────────────────────────────────────────── */}
+      <div style={{ marginTop: '2.5rem' }}>
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: 'var(--text-primary)' }}>Story Cover Images</h3>
+        <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+          Upload a cover picture for each story to show on the Stories page.
+        </p>
+
+        {coverError && (
+          <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 700, marginBottom: '1rem' }}>
+            ✕ {coverError}
+          </div>
+        )}
+
+        <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
+          {stories.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>Add a story above first, then attach its cover here.</p>}
+          {stories.map(story => {
+            const cover = storyCovers[story.id];
+            return (
+              <div key={story.id} style={rowStyle}>
+                <input
+                  type="file"
+                  ref={el => { coverRefs.current[story.id] = el; }}
+                  style={{ display: 'none' }}
+                  accept=".png,.jpg,.jpeg,.webp"
+                  onChange={e => { if (e.target.files?.[0]) handleCoverUpload(story.id, e.target.files[0]); e.target.value = ''; }}
+                />
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {cover && <img src={cover.url} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '0.4rem' }} />}
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                      {story.icon} {story.title}
+                      {!story.active && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>(hidden)</span>}
+                    </p>
+                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: cover ? '#22A05A' : 'var(--text-muted)', fontWeight: 600 }}>
+                      {cover ? 'Cover uploaded' : 'No cover attached'}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+                  <button
+                    onClick={() => coverRefs.current[story.id]?.click()}
+                    disabled={uploadingCover === story.id}
+                    style={{ ...btnBase, background: cover ? '#EFF6FF' : 'var(--maroon)', color: cover ? '#2C5FA0' : 'white', border: cover ? '1.5px solid #BFDBFE' : 'none', opacity: uploadingCover === story.id ? 0.6 : 1 }}
+                  >
+                    {uploadingCover === story.id ? '⏳ Uploading…' : cover ? '↑ Replace' : '↑ Upload cover'}
+                  </button>
+                  {cover && (
+                    <ConfirmBtn
+                      label="Remove"
+                      onConfirm={() => handleCoverRemove(story.id)}
+                      btnStyle={{ ...btnBase, background: '#FEE2E2', color: '#DC2626', border: 'none' }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ── Uploadable files ──────────────────────────────────────────── */}
       <div style={{ marginTop: '2.5rem' }}>
@@ -1536,8 +1662,8 @@ function FreeStoriesTab() {
         )}
 
         <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
-          {currentStories().length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>Add a story above first, then attach its file here.</p>}
-          {currentStories().map(story => {
+          {stories.length === 0 && <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>Add a story above first, then attach its file here.</p>}
+          {stories.map(story => {
             const file = storyFiles[story.id];
             return (
               <div key={story.id} style={rowStyle}>
@@ -1737,6 +1863,7 @@ function getCalendarFile(): CalendarFile {
 }
 
 function PrayersTab() {
+  const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [prayerFiles, setPrayerFiles] = useState<PrayerFilesMap>(getPrayerFiles);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -1788,11 +1915,6 @@ function PrayersTab() {
     } catch { /* best effort */ }
     localStorage.removeItem(CALENDAR_FILE_KEY);
     setCalendarFile(null);
-  };
-
-  const currentPrayers = (): Prayer[] => {
-    try { const s = localStorage.getItem('tk_prayers'); return s ? JSON.parse(s) : PRAYER_DEFAULTS; }
-    catch { return PRAYER_DEFAULTS; }
   };
 
   const saveFiles = (next: PrayerFilesMap) => {
@@ -1853,6 +1975,8 @@ function PrayersTab() {
         defaults={PRAYER_DEFAULTS}
         addLabel="Add Prayer"
         renderPreview={p => `${p.icon} ${p.title}`}
+        onItemsChange={setPrayers}
+        onDelete={handleRemove}
         fields={[
           { key: 'icon',        label: 'Icon (emoji)' },
           { key: 'title',       label: 'Title' },
@@ -1877,7 +2001,7 @@ function PrayersTab() {
         )}
 
         <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
-          {currentPrayers().map(prayer => {
+          {prayers.map(prayer => {
             const file = prayerFiles[prayer.id];
             return (
               <div key={prayer.id} style={rowStyle}>
@@ -1984,15 +2108,11 @@ function getGuideFiles(): GuideFilesMap {
 }
 
 function GuidesTab() {
+  const [guides, setGuides] = useState<ParentGuide[]>([]);
   const [guideFiles, setGuideFiles] = useState<GuideFilesMap>(getGuideFiles);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  const currentGuides = (): ParentGuide[] => {
-    try { const s = localStorage.getItem('tk_parent_guides'); return s ? JSON.parse(s) : GUIDE_DEFAULTS; }
-    catch { return GUIDE_DEFAULTS; }
-  };
 
   const saveFiles = (next: GuideFilesMap) => {
     localStorage.setItem(GUIDE_FILES_KEY, JSON.stringify(next));
@@ -2052,6 +2172,8 @@ function GuidesTab() {
         defaults={GUIDE_DEFAULTS}
         addLabel="Add Guide"
         renderPreview={g => `${g.icon} ${g.title}`}
+        onItemsChange={setGuides}
+        onDelete={handleRemove}
         fields={[
           { key: 'icon',   label: 'Icon (emoji)' },
           { key: 'title',  label: 'Title' },
@@ -2076,7 +2198,7 @@ function GuidesTab() {
         )}
 
         <div style={{ background: 'white', borderRadius: '0.875rem', overflow: 'hidden', border: '1px solid var(--cream-border)' }}>
-          {currentGuides().map(guide => {
+          {guides.map(guide => {
             const file = guideFiles[guide.id];
             return (
               <div key={guide.id} style={rowStyle}>
@@ -2176,7 +2298,7 @@ function StripeSubsTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Stripe Subscriptions</h2>
+        <h2 style={{ margin: 0, color: 'var(--maroon)', fontSize: '1.25rem' }}>Recurring Payments</h2>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.3rem 0.875rem', borderRadius: '9999px', fontWeight: 800, fontSize: '0.85rem' }}>
             MRR ~${mrr.toFixed(2)}/mo
@@ -2358,22 +2480,50 @@ function SettingsTab({ toast }: { toast: ToastFn }) {
   );
 }
 
-const TABS = [
-  { id: 'overview',    label: 'Overview',    icon: '📊', key: 'o' },
-  { id: 'products',    label: 'Products',    icon: '📦', key: 'p' },
-  { id: 'orders',      label: 'Orders',      icon: '🛒', key: 'r' },
-  { id: 'subscribers', label: 'Subscribers', icon: '✉️', key: 's' },
-  { id: 'stripe-subs', label: 'Subscriptions', icon: '💳', key: 'b' },
-  { id: 'users',       label: 'Users',       icon: '👥', key: 'u' },
-  { id: 'episodes',    label: 'Episodes',    icon: '▶',  key: 'e' },
-  { id: 'activities',  label: 'Activities',  icon: '🎨', key: 'a' },
-  { id: 'quizzes',     label: 'Quizzes',     icon: '🧠', key: 'q' },
-  { id: 'prayers',     label: 'Prayers',     icon: '🙏', key: 'y' },
-  { id: 'guides',      label: 'Guides',      icon: '📋', key: 'g' },
-  { id: 'free-stories', label: 'Free Stories', icon: '📖', key: 'f' },
-  { id: 'activity',    label: 'Audit Log',   icon: '📈', key: 'l' },
-  { id: 'settings',    label: 'Settings',    icon: '⚙️',  key: 'x' },
+type TabDef = { id: string; label: string; icon: string; key: string; hint: string };
+
+const TAB_GROUPS: { label: string; tabs: TabDef[] }[] = [
+  {
+    label: '',
+    tabs: [
+      { id: 'overview', label: 'Overview', icon: '📊', key: 'o', hint: 'Snapshot of sales, stock, and subscriber stats' },
+    ],
+  },
+  {
+    label: 'Content',
+    tabs: [
+      { id: 'episodes',     label: 'Episodes',     icon: '▶',  key: 'e', hint: 'Manage the video episode library' },
+      { id: 'activities',   label: 'Activities',    icon: '🎨', key: 'a', hint: 'Coloring pages, crafts, and printable activities' },
+      { id: 'quizzes',      label: 'Quizzes',       icon: '🧠', key: 'q', hint: 'Saint and Bible trivia questions' },
+      { id: 'prayers',      label: 'Prayers',       icon: '🙏', key: 'y', hint: 'Prayer cards and the printable feast calendar' },
+      { id: 'guides',       label: 'Guides',        icon: '📋', key: 'g', hint: 'Parent and teacher lesson guides' },
+      { id: 'free-stories', label: 'Free Stories',  icon: '📖', key: 'f', hint: 'Free read-along stories (Coming Soon page)' },
+    ],
+  },
+  {
+    label: 'Sales',
+    tabs: [
+      { id: 'products',    label: 'Products',          icon: '📦', key: 'p', hint: 'Shop items for sale' },
+      { id: 'orders',      label: 'Orders',             icon: '🛒', key: 'r', hint: 'Customer purchases and shipping status' },
+      { id: 'stripe-subs', label: 'Recurring Payments', icon: '💳', key: 'b', hint: 'Stripe subscription plans and billing' },
+    ],
+  },
+  {
+    label: 'People',
+    tabs: [
+      { id: 'subscribers', label: 'Newsletter Subscribers', icon: '✉️', key: 's', hint: 'Email list for newsletters and announcements' },
+      { id: 'users',       label: 'Customer Accounts',      icon: '👥', key: 'u', hint: 'Registered site accounts' },
+    ],
+  },
+  {
+    label: 'System',
+    tabs: [
+      { id: 'activity',  label: 'Activity History', icon: '📈', key: 'l', hint: 'Log of admin actions taken on the site' },
+      { id: 'settings',  label: 'Settings',          icon: '⚙️',  key: 'x', hint: 'Password, low-stock alerts, announcement bar' },
+    ],
+  },
 ];
+
 
 export default function Admin() {
   const [tab, setTab] = useState('overview');
@@ -2495,30 +2645,45 @@ export default function Admin() {
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Sidebar */}
         <aside style={{ width: 220, background: 'white', borderRight: '1px solid var(--cream-border)', padding: '1.5rem 0', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-          {TABS.map(t => {
-            const badge = t.id === 'orders' ? ordersBadge : 0;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  padding: '0.75rem 1.5rem', border: 'none',
-                  background: tab === t.id ? 'var(--cream)' : 'white',
-                  color: tab === t.id ? 'var(--maroon)' : 'var(--text-secondary)',
-                  fontWeight: tab === t.id ? 800 : 600, fontSize: '0.9rem', cursor: 'pointer',
-                  borderLeft: tab === t.id ? '3px solid var(--maroon)' : '3px solid transparent',
-                  textAlign: 'left', transition: 'all 0.15s', position: 'relative',
-                }}
-              >
-                <span>{t.icon}</span>
-                <span style={{ flex: 1 }}>{t.label}</span>
-                {badge > 0 && (
-                  <span style={{ background: '#EF4444', color: 'white', borderRadius: '9999px', padding: '0.1rem 0.4rem', fontSize: '0.7rem', fontWeight: 900, minWidth: 18, textAlign: 'center' }}>{badge}</span>
-                )}
-              </button>
-            );
-          })}
+          {TAB_GROUPS.map(group => (
+            <div key={group.label || 'top'}>
+              {group.label && (
+                <p style={{
+                  margin: 0, padding: '1.1rem 1.5rem 0.35rem',
+                  fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em',
+                  textTransform: 'uppercase', color: 'var(--text-muted)',
+                }}>
+                  {group.label}
+                </p>
+              )}
+              {group.tabs.map(t => {
+                const badge = t.id === 'orders' ? ordersBadge : 0;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    title={t.hint}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      width: '100%',
+                      padding: '0.75rem 1.5rem', border: 'none',
+                      background: tab === t.id ? 'var(--cream)' : 'white',
+                      color: tab === t.id ? 'var(--maroon)' : 'var(--text-secondary)',
+                      fontWeight: tab === t.id ? 800 : 600, fontSize: '0.9rem', cursor: 'pointer',
+                      borderLeft: tab === t.id ? '3px solid var(--maroon)' : '3px solid transparent',
+                      textAlign: 'left', transition: 'all 0.15s', position: 'relative',
+                    }}
+                  >
+                    <span>{t.icon}</span>
+                    <span style={{ flex: 1 }}>{t.label}</span>
+                    {badge > 0 && (
+                      <span style={{ background: '#EF4444', color: 'white', borderRadius: '9999px', padding: '0.1rem 0.4rem', fontSize: '0.7rem', fontWeight: 900, minWidth: 18, textAlign: 'center' }}>{badge}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
 
           {/* Sidebar footer: stats + session info */}
           <div style={{ marginTop: 'auto', borderTop: '1px solid var(--cream-border)' }}>
@@ -2638,7 +2803,7 @@ export default function Admin() {
                     { label: 'Email Blast',       tab: 'subscribers', icon: '✉️', color: '#3B82F6' },
                     { label: 'View Users',        tab: 'users',       icon: '👥', color: '#22C55E' },
                     { label: 'Manage Episodes',   tab: 'episodes',    icon: '▶',  color: '#F97316' },
-                    { label: 'Activity Log',      tab: 'activity',    icon: '📋', color: '#C9922A' },
+                    { label: 'Activity History',  tab: 'activity',    icon: '📋', color: '#C9922A' },
                   ].map(a => (
                     <button
                       key={a.tab}

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { API } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useAuth } from '../context/AuthContext';
+import { checkDownloadAccess, recordDownload, downloadBlockMessage } from '../lib/downloads';
 
 // ── Shared Oriental Orthodox feast days (tradition === 'both' only) ───────────
 // These are the great feasts and saints' days observed across all Oriental
@@ -113,6 +115,7 @@ export default function Calendar() {
   const [year, setYear]   = useState(today.getFullYear());
   const [email, setEmail] = useState('');
   const { addToast } = useToast();
+  const { user } = useAuth();
   const prayers = getPrayers().filter(p => p.active ?? true);
   const prayerFiles = getPrayerFiles();
   const calendarFile = getCalendarFile();
@@ -222,6 +225,11 @@ export default function Calendar() {
                       rel="noopener noreferrer"
                       title="Download prayer card"
                       style={{ background: 'none', border: '1px solid var(--cream-border)', borderRadius: '0.4rem', padding: '0.25rem 0.5rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textDecoration: 'none' }}
+                      onClick={e => {
+                        const check = checkDownloadAccess(user);
+                        if (!check.allowed) { e.preventDefault(); addToast(downloadBlockMessage(check.reason!), 'info'); return; }
+                        recordDownload(user);
+                      }}
                     >
                       📥 Download Card
                     </a>
@@ -269,6 +277,11 @@ export default function Calendar() {
                 rel="noopener noreferrer"
                 className="btn-gold"
                 style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-block' }}
+                onClick={e => {
+                  const check = checkDownloadAccess(user);
+                  if (!check.allowed) { e.preventDefault(); addToast(downloadBlockMessage(check.reason!), 'info'); return; }
+                  recordDownload(user);
+                }}
               >
                 📥 Download Printable Calendar
               </a>

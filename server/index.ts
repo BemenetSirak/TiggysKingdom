@@ -139,6 +139,31 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req: Requ
       console.log(`✅  Payment confirmed for order ${order.id}`);
     }
   }
+
+  if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
+    const sub = event.data.object as Stripe.Subscription;
+    const userId = sub.metadata?.userId;
+    const tier   = sub.metadata?.tier;
+    if (userId && tier) {
+      const active = sub.status === "active" || sub.status === "trialing";
+      await supabase.from("users").update({
+        subscription_tier: active ? tier : "free",
+        stripe_customer_id: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+        stripe_subscription_id: sub.id,
+      }).eq("id", userId);
+      console.log(`✅  Subscription ${sub.status} for user ${userId} → tier ${active ? tier : "free"}`);
+    }
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const sub = event.data.object as Stripe.Subscription;
+    const userId = sub.metadata?.userId;
+    if (userId) {
+      await supabase.from("users").update({ subscription_tier: "free" }).eq("id", userId);
+      console.log(`✅  Subscription cancelled for user ${userId} → tier free`);
+    }
+  }
+
   res.json({ received: true });
 });
 
@@ -256,6 +281,7 @@ app.post("/create-checkout-session", async (req: Request, res: Response) => {
 app.post("/create-subscription-session", async (req: Request, res: Response) => {
   const { planId, planName, priceMonthly, userId, customerEmail } = req.body;
   if (!priceMonthly || !planName) return res.status(400).json({ error: "planName and priceMonthly required" });
+  if (!userId) return res.status(400).json({ error: "userId required" });
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -269,7 +295,8 @@ app.post("/create-subscription-session", async (req: Request, res: Response) => 
         },
         quantity: 1,
       }],
-      subscription_data: { trial_period_days: 7 },
+      client_reference_id: userId,
+      subscription_data: { trial_period_days: 7, metadata: { userId, tier: planId } },
       customer_email: customerEmail || undefined,
       success_url: `${CLIENT_ORIGIN.startsWith('http://localhost') ? (req.headers.origin || CLIENT_ORIGIN) : CLIENT_ORIGIN}/success?plan=${planId}`,
       cancel_url:  `${CLIENT_ORIGIN.startsWith('http://localhost') ? (req.headers.origin || CLIENT_ORIGIN) : CLIENT_ORIGIN}/subscribe`,
@@ -309,10 +336,23 @@ app.post("/api/users/register", async (req: Request, res: Response) => {
   const { id, name, email, joinedDate } = req.body;
   const { data: existing } = await supabase.from("users").select("email").eq("email", email).maybeSingle();
   if (!existing) {
-    await supabase.from("users").insert({ id, name, email, joined_date: joinedDate, created_at: new Date().toISOString() });
+    const { error } = await supabase.from("users").insert({ id, name, email, joined_date: joinedDate, created_at: new Date().toISOString() });
+    if (error) { console.error("User registration insert failed:", error.message); return res.status(500).json({ error: error.message }); }
     emailWelcome(name, email);
   }
   res.json({ success: true });
+});
+
+// ── Fetch user (subscription tier, etc.) ──────────────────────────────────────
+app.get("/api/users/:id", async (req: Request, res: Response) => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, name, email, subscription_tier")
+    .eq("id", req.params.id)
+    .maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: "User not found" });
+  res.json(camelize(data));
 });
 
 // ── Update user name ──────────────────────────────────────────────────────────
@@ -769,6 +809,7 @@ registerUploadRoutes("guides", "guide-files", [".pdf", ".doc", ".docx"]);
 registerUploadRoutes("activities", "activity-files", [".pdf", ".doc", ".docx", ".png", ".jpg", ".jpeg"]);
 registerUploadRoutes("stories", "story-files", [".pdf", ".epub", ".png", ".jpg", ".jpeg"]);
 registerUploadRoutes("free-stories", "free-story-files", [".pdf", ".png", ".jpg", ".jpeg"]);
+registerUploadRoutes("free-story-covers", "free-story-cover-files", [".png", ".jpg", ".jpeg", ".webp"], 10);
 registerUploadRoutes("prayers", "prayer-files", [".pdf", ".png", ".jpg", ".jpeg"]);
 registerUploadRoutes("calendar", "calendar-files", [".pdf", ".png", ".jpg", ".jpeg"]);
 

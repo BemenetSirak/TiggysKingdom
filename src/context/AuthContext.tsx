@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
+export type SubscriptionTier = 'free' | 'kingdom_lamb' | 'royal_family' | 'monastery';
+
 export interface User {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export interface User {
   avatar: string | null;
   isGuest?: boolean;
   joinedDate?: string;
+  subscriptionTier?: SubscriptionTier;
 }
 
 export interface VideoProgress {
@@ -50,6 +53,7 @@ interface AuthContextValue {
   logout: () => void;
   loginAsGuest: () => void;
   updateUser: (updates: Partial<User>) => void;
+  refreshSubscriptionTier: () => Promise<void>;
   saveActivity: (userId: string, activity: Omit<Activity, 'savedAt'>) => void;
   getLastActivity: (userId: string) => Activity | null;
   saveVideoProgress: (userId: string, progress: Omit<VideoProgress, 'lastWatchedAt'>) => void;
@@ -70,10 +74,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem('tk_user');
     if (stored) {
-      try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
+      try {
+        const parsed = JSON.parse(stored);
+        setUser(parsed);
+        if (parsed?.id && !parsed.isGuest) refreshSubscriptionTier(parsed.id);
+      } catch { /* ignore */ }
     }
     setLoading(false);
   }, []);
+
+  const refreshSubscriptionTier = useCallback(async (idOverride?: string) => {
+    const id = idOverride || user?.id;
+    if (!id || id === 'guest') return;
+    try {
+      const res = await fetch(`${API}/api/users/${id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.subscriptionTier) return;
+      setUser(prev => {
+        if (!prev) return prev;
+        const updated = { ...prev, subscriptionTier: data.subscriptionTier };
+        localStorage.setItem('tk_user', JSON.stringify(updated));
+        return updated;
+      });
+    } catch { /* offline — keep last known tier */ }
+  }, [user?.id]);
 
   const login = (email: string, password: string) => {
     const users: (User & { password: string })[] = JSON.parse(localStorage.getItem('tk_users') || '[]');
@@ -84,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { password: _, ...safe } = found;
     setUser(safe);
     localStorage.setItem('tk_user', JSON.stringify(safe));
+    refreshSubscriptionTier(safe.id);
     return { success: true };
   };
 
@@ -194,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [getFavorites]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, loginAsGuest, updateUser, saveActivity, getLastActivity, saveVideoProgress, getVideoProgress, getWatchHistory, addFavorite, removeFavorite, getFavorites }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, loginAsGuest, updateUser, refreshSubscriptionTier, saveActivity, getLastActivity, saveVideoProgress, getVideoProgress, getWatchHistory, addFavorite, removeFavorite, getFavorites }}>
       {children}
     </AuthContext.Provider>
   );

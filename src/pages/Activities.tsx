@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useAuth } from '../context/AuthContext';
 import GuestBanner from '../components/GuestBanner';
+import { checkDownloadAccess, recordDownload, downloadBlockMessage } from '../lib/downloads';
 
 // ── Admin-editable data keys ──────────────────────────────────────────────────
 const ACTIVITIES_KEY = 'tk_activities';
@@ -216,6 +217,11 @@ export default function Activities() {
                     style={{ color: a.ctaColor, fontWeight: 800, fontSize: '0.9rem', fontFamily: 'Fredoka, sans-serif', textDecoration: 'none' }}
                     onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'}
                     onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'}
+                    onClick={e => {
+                      const check = checkDownloadAccess(user);
+                      if (!check.allowed) { e.preventDefault(); addToast(downloadBlockMessage(check.reason!), 'info'); return; }
+                      recordDownload(user);
+                    }}
                   >
                     {a.cta}
                   </a>
