@@ -557,7 +557,7 @@ export default function Lessons() {
     setDisplayCount(c => Math.max(c, neededCount));
   }, [resumeVideoId, allVideos, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchAllVideos = async () => {
+  const fetchAllVideos = async (retriesLeft = 2) => {
     const cached = getCachedVideos();
     if (cached) {
       setAllVideos(cached.data);
@@ -614,9 +614,15 @@ export default function Lessons() {
 
       setCachedVideos(collected);
     } catch (err: unknown) {
+      // Transient network blips (dropped wifi, DNS hiccup) throw before any JSON
+      // response — retry a couple times with backoff before showing an error.
+      if (collected.length === 0 && retriesLeft > 0) {
+        setTimeout(() => fetchAllVideos(retriesLeft - 1), 1200);
+        return;
+      }
       if (collected.length === 0) setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (collected.length > 0 || retriesLeft === 0) setLoading(false);
     }
   };
 
@@ -798,7 +804,13 @@ export default function Lessons() {
         {error && !loading && (
           <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '1rem', padding: '1.5rem', marginBottom: '2rem', color: '#DC2626', fontWeight: 600, fontSize: '0.9rem', textAlign: 'center' }}>
             <p style={{ margin: '0 0 0.5rem' }}>Could not load videos from YouTube. Check your API key or connection.</p>
-            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>{error}</p>
+            <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', opacity: 0.8 }}>{error}</p>
+            <button
+              onClick={() => fetchAllVideos()}
+              style={{ background: '#DC2626', color: 'white', border: 'none', borderRadius: '9999px', padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+            >
+              Retry
+            </button>
           </div>
         )}
 
